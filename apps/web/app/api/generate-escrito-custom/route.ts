@@ -57,32 +57,45 @@ export async function POST(request: Request) {
       `Datos del caso:\n${datos_caso}\n\n` +
       `Para generar escritos reales, configurá ANTHROPIC_API_KEY en .env.local`;
   } else {
-    const { getAnthropicClient } = await import("@/lib/ai/anthropic");
-    const anthropic = getAnthropicClient();
+    try {
+      const { getAnthropicClient } = await import("@/lib/ai/anthropic");
+      const anthropic = getAnthropicClient();
 
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4096,
-      temperature: 0.3,
-      system: [
-        {
-          type: "text",
-          text: systemPrompt,
-          cache_control: { type: "ephemeral" },
-        },
-      ],
-      messages: [
-        {
-          role: "user",
-          content:
-            "Generá el escrito completo basándote en los datos proporcionados. " +
-            "Seguí la estructura adecuada para este tipo de escrito.",
-        },
-      ],
-    });
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 4096,
+        temperature: 0.3,
+        system: [
+          {
+            type: "text",
+            text: systemPrompt,
+            cache_control: { type: "ephemeral" },
+          },
+        ],
+        messages: [
+          {
+            role: "user",
+            content:
+              "Generá el escrito completo basándote en los datos proporcionados. " +
+              "Seguí la estructura adecuada para este tipo de escrito.",
+          },
+        ],
+      });
 
-    const textBlock = response.content.find((b) => b.type === "text");
-    contenido = textBlock?.text ?? "";
+      const textBlock = response.content.find((b) => b.type === "text");
+      contenido = textBlock?.text ?? "";
+    } catch (aiError: unknown) {
+      const errMsg = aiError instanceof Error ? aiError.message : "Error desconocido";
+      const isCredits = errMsg.includes("credit balance");
+      return NextResponse.json(
+        {
+          error: isCredits
+            ? "Sin créditos en Anthropic. Cargá saldo en console.anthropic.com/settings/billing"
+            : `Error al generar el escrito: ${errMsg}`,
+        },
+        { status: 502 }
+      );
+    }
   }
 
   const titulo = `${tipo_escrito} — ${new Date().toLocaleDateString("es-AR")}`;

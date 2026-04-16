@@ -42,53 +42,70 @@ export async function POST(request: Request) {
     });
   }
 
-  const { getAnthropicClient } = await import("@/lib/ai/anthropic");
-  const anthropic = getAnthropicClient();
+  try {
+    const { getAnthropicClient } = await import("@/lib/ai/anthropic");
+    const anthropic = getAnthropicClient();
 
-  const systemPrompt = buildChatSystemPrompt();
+    const systemPrompt = buildChatSystemPrompt();
 
-  const stream = anthropic.messages.stream({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 2048,
-    temperature: 0.5,
-    system: [
-      {
-        type: "text",
-        text: systemPrompt,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    messages: [{ role: "user", content: message }],
-  });
+    const stream = anthropic.messages.stream({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 2048,
+      temperature: 0.5,
+      system: [
+        {
+          type: "text",
+          text: systemPrompt,
+          cache_control: { type: "ephemeral" },
+        },
+      ],
+      messages: [{ role: "user", content: message }],
+    });
 
-  let fullResponse = "";
+    let fullResponse = "";
 
-  const readable = new ReadableStream({
-    async start(controller) {
-      const encoder = new TextEncoder();
-      for await (const event of stream) {
-        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-          const text = event.delta.text;
-          fullResponse += text;
-          controller.enqueue(encoder.encode(text));
+    const readable = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        try {
+          for await (const event of stream) {
+            if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+              const text = event.delta.text;
+              fullResponse += text;
+              controller.enqueue(encoder.encode(text));
+            }
+          }
+
+          await supabase.from("consultas_ia").insert({
+            user_id: user.id,
+            pregunta: message,
+            respuesta: fullResponse,
+            modelo_usado: "haiku-4.5",
+          });
+        } catch (streamError: unknown) {
+          const errMsg = streamError instanceof Error ? streamError.message : "Error de IA";
+          controller.enqueue(encoder.encode(`\n\n[Error: ${errMsg}]`));
         }
-      }
+        controller.close();
+      },
+    });
 
-      await supabase.from("consultas_ia").insert({
-        user_id: user.id,
-        pregunta: message,
-        respuesta: fullResponse,
-        modelo_usado: "haiku-4.5",
-      });
-
-      controller.close();
-    },
-  });
-
-  return new Response(readable, {
-    headers: {
-      "Content-Type": "text/plain; charset=utf-8",
-      "Transfer-Encoding": "chunked",
-    },
-  });
+    return new Response(readable, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Transfer-Encoding": "chunked",
+      },
+    });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : "Error desconocido";
+    const isCredits = errMsg.includes("credit balance");
+    return NextResponse.json(
+      {
+        error: isCredits
+          ? "Sin créditos en Anthropic. Cargá saldo en console.anthropic.com/settings/billing"
+          : `Error al consultar la IA: ${errMsg}`,
+      },
+      { status: 502 }
+    );
+  }
 }

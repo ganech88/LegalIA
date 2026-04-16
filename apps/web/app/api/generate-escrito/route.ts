@@ -45,36 +45,49 @@ export async function POST(request: Request) {
       `Datos del caso:\n${JSON.stringify(datos_caso, null, 2)}\n\n` +
       `Para generar escritos reales, configurá ANTHROPIC_API_KEY en .env.local`;
   } else {
-    const { getAnthropicClient } = await import("@/lib/ai/anthropic");
-    const anthropic = getAnthropicClient();
+    try {
+      const { getAnthropicClient } = await import("@/lib/ai/anthropic");
+      const anthropic = getAnthropicClient();
 
-    let prompt = template.template_prompt as string;
-    for (const [key, value] of Object.entries(datos_caso)) {
-      const strValue = Array.isArray(value) ? value.join(", ") : String(value ?? "");
-      prompt = prompt.replaceAll(`{${key}}`, strValue);
+      let prompt = template.template_prompt as string;
+      for (const [key, value] of Object.entries(datos_caso)) {
+        const strValue = Array.isArray(value) ? value.join(", ") : String(value ?? "");
+        prompt = prompt.replaceAll(`{${key}}`, strValue);
+      }
+
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 4096,
+        temperature: 0.3,
+        system: [
+          {
+            type: "text",
+            text: prompt,
+            cache_control: { type: "ephemeral" },
+          },
+        ],
+        messages: [
+          {
+            role: "user",
+            content: `Generá el escrito completo basándote en los datos proporcionados. Seguí la estructura indicada.`,
+          },
+        ],
+      });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      contenido = textBlock?.text ?? "";
+    } catch (aiError: unknown) {
+      const errMsg = aiError instanceof Error ? aiError.message : "Error desconocido";
+      const isCredits = errMsg.includes("credit balance");
+      return NextResponse.json(
+        {
+          error: isCredits
+            ? "Sin créditos en Anthropic. Cargá saldo en console.anthropic.com/settings/billing"
+            : `Error al generar el escrito: ${errMsg}`,
+        },
+        { status: 502 }
+      );
     }
-
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4096,
-      temperature: 0.3,
-      system: [
-        {
-          type: "text",
-          text: prompt,
-          cache_control: { type: "ephemeral" },
-        },
-      ],
-      messages: [
-        {
-          role: "user",
-          content: `Generá el escrito completo basándote en los datos proporcionados. Seguí la estructura indicada.`,
-        },
-      ],
-    });
-
-    const textBlock = response.content.find((b) => b.type === "text");
-    contenido = textBlock?.text ?? "";
   }
 
   const titulo = `${template.nombre_display} — ${new Date().toLocaleDateString("es-AR")}`;
