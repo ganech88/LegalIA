@@ -2,6 +2,7 @@ export type Plan = "free" | "profesional" | "estudio";
 export type Fuero = "laboral" | "civil" | "comercial" | "penal" | "familia";
 export type Jurisdiccion = "CABA" | "PBA" | "nacional";
 export type Especialidad = "laboral" | "civil" | "comercial" | "penal" | "familia" | "administrativo" | "tributario";
+export type EstadoCaso = "activo" | "archivado" | "finalizado";
 
 export interface Profile {
   id: string;
@@ -46,7 +47,7 @@ export interface FormField {
 export interface Escrito {
   id: string;
   user_id: string;
-  template_id: string;
+  template_id: string | null;
   tipo: string;
   titulo: string;
   datos_caso: Record<string, unknown>;
@@ -57,6 +58,22 @@ export interface Escrito {
   tokens_input: number | null;
   tokens_output: number | null;
   modelo_usado: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Caso {
+  id: string;
+  user_id: string;
+  caratula: string;
+  expediente: string | null;
+  fuero: Fuero;
+  jurisdiccion: Jurisdiccion;
+  juzgado: string | null;
+  estado: EstadoCaso;
+  cliente_nombre: string | null;
+  contraparte_nombre: string | null;
+  notas: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -104,4 +121,18 @@ export const JURISDICCIONES: { value: Jurisdiccion; label: string }[] = [
   { value: "CABA", label: "Ciudad Autónoma de Buenos Aires" },
   { value: "PBA", label: "Provincia de Buenos Aires" },
   { value: "nacional", label: "Justicia Nacional / Federal" },
+];
+
+export const FUEROS: { value: Fuero; label: string }[] = [
+  { value: "laboral", label: "Laboral" },
+  { value: "civil", label: "Civil" },
+  { value: "comercial", label: "Comercial" },
+  { value: "penal", label: "Penal" },
+  { value: "familia", label: "Familia" },
+];
+
+export const ESTADOS_CASO: { value: EstadoCaso; label: string; color: string }[] = [
+  { value: "activo", label: "Activo", color: "bg-green-50 text-green-700" },
+  { value: "archivado", label: "Archivado", color: "bg-slate-100 text-slate-600" },
+  { value: "finalizado", label: "Finalizado", color: "bg-red-50 text-red-700" },
 ];
