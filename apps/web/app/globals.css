@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-serif);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -147,11 +147,66 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   html {
     @apply font-sans;
     scroll-behavior: smooth;
   }
+  ::selection {
+    background-color: rgba(29, 78, 216, 0.15);
+  }
+}
+
+/* ─── Premium Typography ────────────────────────────────────── */
+.heading-serif {
+  font-family: var(--font-serif), Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+/* ─── Premium card with glow ────────────────────────────────── */
+.card-premium {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  background: white;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.card-premium:hover {
+  border-color: rgba(203, 213, 225, 1);
+  box-shadow:
+    0 8px 30px rgba(15, 23, 42, 0.06),
+    0 1px 3px rgba(15, 23, 42, 0.04);
+  transform: translateY(-2px);
+}
+
+/* ─── Scrollbar styling ─────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
 }
 
 /* ─── LegalIA Animations ─────────────────────────────────────── */

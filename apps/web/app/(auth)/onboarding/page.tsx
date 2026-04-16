@@ -139,7 +139,7 @@ export default function OnboardingPage() {
             <p className="text-xs font-semibold uppercase tracking-widest text-[#d97706]">
               Paso {step} de 3
             </p>
-            <h1 className="mt-1 text-2xl font-extrabold text-[#0f172a]">
+            <h1 className="mt-1 heading-serif text-2xl text-[#0f172a]">
               {step === 1 && "Contanos sobre vos"}
               {step === 2 && "¿En qué te especializás?"}
               {step === 3 && "¿Dónde ejercés?"}

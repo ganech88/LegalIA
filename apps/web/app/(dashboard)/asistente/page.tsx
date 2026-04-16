@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Send,
   Sparkles,
@@ -125,7 +124,7 @@ export default function AsistentePage() {
             <Sparkles className="h-4 w-4 text-[#fbbf24]" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-[#0f172a]">
+            <h1 className="heading-serif text-2xl text-[#0f172a]">
               Asistente IA
             </h1>
           </div>
@@ -137,7 +136,7 @@ export default function AsistentePage() {
 
       {/* ── Chat container ──────────────────────────────────── */}
       <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <ScrollArea className="flex-1 p-4 md:p-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6">
           {messages.length === 0 ? (
             /* ── Empty state ── */
             <div className="flex h-full min-h-[300px] flex-col items-center justify-center gap-6 py-8 text-center">
@@ -229,7 +228,7 @@ export default function AsistentePage() {
               <div ref={scrollRef} />
             </div>
           )}
-        </ScrollArea>
+        </div>
 
         {/* ── Input area ───────────────────────────────────── */}
         <div className="shrink-0 border-t border-slate-100 bg-white p-4">

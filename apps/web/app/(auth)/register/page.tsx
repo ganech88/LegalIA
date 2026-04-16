@@ -55,7 +55,7 @@ export default function RegisterPage() {
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
             <Mail className="h-7 w-7 text-emerald-600" />
           </div>
-          <h2 className="text-2xl font-extrabold text-[#0f172a]">Revisá tu email</h2>
+          <h2 className="heading-serif text-2xl text-[#0f172a]">Revisá tu email</h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-500">
             Te enviamos un link de confirmación a{" "}
             <span className="font-semibold text-[#1e3a5f]">{email}</span>.
@@ -98,7 +98,7 @@ export default function RegisterPage() {
 
         {/* Central copy */}
         <div className="relative space-y-5">
-          <h2 className="text-3xl font-extrabold leading-tight text-white">
+          <h2 className="heading-serif text-4xl leading-tight text-white">
             Empezá en{" "}
             <span className="text-[#fbbf24]">60 segundos</span>
           </h2>
@@ -146,7 +146,7 @@ export default function RegisterPage() {
             </span>
           </div>
 
-          <h1 className="text-2xl font-extrabold text-[#0f172a]">Crear cuenta gratis</h1>
+          <h1 className="heading-serif text-3xl text-[#0f172a]">Crear cuenta gratis</h1>
           <p className="mt-1 text-sm text-slate-500">
             Sin tarjeta de crédito. Empezás en 60 segundos.
           </p>

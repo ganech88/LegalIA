@@ -71,7 +71,14 @@ export function CasosClient({ initialCasos }: CasosClientProps) {
 
   async function handleCreate(form: FormData) {
     setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setSaving(false);
+      return;
+    }
+
     const newCaso = {
+      user_id: user.id,
       caratula: form.get("caratula") as string,
       expediente: (form.get("expediente") as string) || null,
       fuero: form.get("fuero") as Fuero,
@@ -133,7 +140,7 @@ export function CasosClient({ initialCasos }: CasosClientProps) {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Casos</h1>
+          <h1 className="heading-serif text-3xl text-slate-900">Casos</h1>
           <p className="mt-1 text-slate-500">
             Gestioná tus expedientes y casos
           </p>
