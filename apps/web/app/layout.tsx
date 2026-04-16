@@ -3,6 +3,7 @@ import { Inter, DM_Serif_Display } from "next/font/google";
 import { Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { RegisterSW } from "@/components/pwa/register-sw";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 import "./globals.css";
 
 const inter = Inter({
@@ -59,6 +60,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         {children}
         <RegisterSW />
+        <InstallPrompt />
         <Toaster
           position="top-right"
           toastOptions={{
