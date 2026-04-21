@@ -4,26 +4,19 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Scale,
-  FileText,
-  MessageSquare,
-  FolderOpen,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  Sparkles,
-} from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Inicio", icon: Scale },
-  { href: "/escritos", label: "Escritos", icon: FileText },
-  { href: "/asistente", label: "Asistente IA", icon: MessageSquare },
-  { href: "/casos", label: "Casos", icon: FolderOpen },
-  { href: "/config", label: "Configuración", icon: Settings },
+const nav = [
+  { num: "I",   label: "Dashboard",    href: "/dashboard" },
+  { num: "II",  label: "Asistente IA", href: "/asistente" },
+  { num: "III", label: "Escritos",     href: "/escritos" },
+  { num: "IV",  label: "Casos",        href: "/casos" },
+  { num: "V",   label: "Calculadoras", href: "/calculadoras" },
+];
+
+const secondary = [
+  { num: "VI",  label: "Configuración", href: "/config" },
 ];
 
 export function Sidebar() {
@@ -38,122 +31,83 @@ export function Sidebar() {
     router.refresh();
   }
 
-  const NavLink = ({ item }: { item: (typeof NAV_ITEMS)[number] }) => {
-    const isActive =
-      pathname === item.href || pathname.startsWith(item.href + "/");
-
-    return (
-      <Link
-        href={item.href}
-        onClick={() => setOpen(false)}
-        className={cn(
-          "group relative flex items-center gap-3 rounded-xl py-2.5 px-3 text-sm font-medium transition-all duration-200",
-          isActive
-            ? "bg-white/[0.08] text-white"
-            : "text-slate-400 hover:bg-white/[0.05] hover:text-slate-200"
-        )}
-      >
-        {isActive && (
-          <motion.div
-            layoutId="sidebar-active"
-            className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-full bg-[#d97706]"
-            transition={{ type: "spring", stiffness: 350, damping: 30 }}
-          />
-        )}
-        <item.icon
-          className={cn(
-            "h-[1.125rem] w-[1.125rem] shrink-0 transition-colors",
-            isActive
-              ? "text-[#fbbf24]"
-              : "text-slate-500 group-hover:text-slate-300"
-          )}
-        />
-        {item.label}
-        {item.href === "/asistente" && (
-          <span className="ml-auto flex items-center gap-1">
-            <Sparkles className="h-3 w-3 text-[#fbbf24] opacity-70" />
-          </span>
-        )}
-      </Link>
-    );
-  };
-
   const sidebarContent = (
     <>
-      {/* Logo */}
-      <div className="flex h-16 shrink-0 items-center gap-2.5 px-5 border-b border-white/[0.06]">
-        <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-[#1e3a5f] shadow-lg shadow-[#1e3a5f]/30">
-          <Scale className="h-4 w-4 text-white" />
-          <div
-            aria-hidden
-            className="absolute inset-0 rounded-lg opacity-50"
-            style={{
-              background:
-                "conic-gradient(from 0deg, transparent, rgba(212,160,40,0.15), transparent)",
-              animation: "spin 20s linear infinite",
-            }}
-          />
+      {/* Logo block */}
+      <Link href="/dashboard" className="flex items-center gap-3 border-b border-[var(--brand-gold)]/20 px-5 py-5">
+        <div className="flex h-[38px] w-[38px] items-center justify-center rounded bg-[var(--brand-gold)] font-[var(--font-display)] text-[22px] font-bold italic text-[var(--brand-navy)]">
+          L
         </div>
-        <span className="text-lg font-bold text-white">
-          Legal<span className="text-[#fbbf24]">IA</span>
-        </span>
-        <span className="ml-auto rounded-md bg-[#d97706]/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#fbbf24]">
-          Beta
-        </span>
+        <div className="leading-tight">
+          <div className="font-[var(--font-display)] text-[18px] font-semibold tracking-[-0.01em] text-white">LegalIA</div>
+          <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--brand-gold)]/80">Ed. Juridica AR</div>
+        </div>
+      </Link>
+
+      {/* Masthead meta */}
+      <div className="border-b border-[var(--brand-gold)]/15 px-5 py-3">
+        <div className="flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.14em] text-white/50">
+          <span>WORKSPACE</span>
+          <span className="text-[var(--brand-gold)]/80">
+            {new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "short" }).toUpperCase()}
+          </span>
+        </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-5">
-        <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-600">
-          Herramientas
-        </p>
-        <ul className="space-y-1">
-          {NAV_ITEMS.slice(0, 4).map((item) => (
-            <li key={item.href}>
-              <NavLink item={item} />
-            </li>
+      {/* Primary nav */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <div className="px-2 pb-2 text-[10px] uppercase tracking-[0.16em] text-[var(--brand-gold)]/70 font-mono">
+          ◆ Workspace
+        </div>
+        <ul className="space-y-0.5">
+          {nav.map(item => (
+            <NavItem key={item.href} item={item} active={pathname === item.href || pathname.startsWith(item.href + "/")} onNavigate={() => setOpen(false)} />
           ))}
         </ul>
 
-        <p className="mb-3 mt-8 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-600">
-          Cuenta
-        </p>
-        <ul className="space-y-1">
-          {NAV_ITEMS.slice(4).map((item) => (
-            <li key={item.href}>
-              <NavLink item={item} />
-            </li>
+        <div className="mt-6 px-2 pb-2 text-[10px] uppercase tracking-[0.16em] text-[var(--brand-gold)]/70 font-mono">
+          ◇ Cuenta
+        </div>
+        <ul className="space-y-0.5">
+          {secondary.map(item => (
+            <NavItem key={item.href} item={item} active={pathname === item.href || pathname.startsWith(item.href + "/")} onNavigate={() => setOpen(false)} />
           ))}
         </ul>
       </nav>
 
-      {/* Bottom section */}
-      <div className="shrink-0 space-y-3 p-4 border-t border-white/[0.06]">
-        <div className="rounded-xl bg-white/[0.04] p-3 backdrop-blur-sm">
-          <p className="text-[10px] leading-relaxed text-slate-500">
-            LegalIA es una herramienta de asistencia. El abogado es responsable
-            de revisar todo contenido generado antes de su presentación.
-          </p>
+      {/* Plan card */}
+      <div className="border-t border-[var(--brand-gold)]/20 p-4">
+        <div className="rounded bg-[var(--brand-navy-2)] border border-[var(--brand-gold)]/25 p-3.5">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--brand-gold)]">Plan gratuito</div>
+            <div className="font-[var(--font-display)] text-[11px] italic text-[var(--brand-gold)]">§</div>
+          </div>
+          <div className="font-[var(--font-display)] text-[22px] font-semibold leading-none text-white mb-1">
+            0<span className="text-[14px] text-white/50 font-normal">/3</span>
+          </div>
+          <div className="text-[10px] text-white/60 mb-2">escritos este mes</div>
+          <div className="h-[3px] w-full overflow-hidden rounded-full bg-white/10">
+            <div className="h-full bg-[var(--brand-gold)]" style={{ width: "0%" }} />
+          </div>
         </div>
+      </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1e3a5f] to-[#1d4ed8] text-xs font-bold text-white shadow-lg">
-            AB
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-xs font-medium text-slate-300">
-              Mi cuenta
-            </div>
-            <div className="text-[10px] text-slate-500">Plan Gratis</div>
-          </div>
-          <button
-            onClick={handleLogout}
-            aria-label="Cerrar sesión"
-            className="rounded-lg p-1.5 text-slate-500 transition-all hover:bg-white/[0.06] hover:text-slate-300"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+      {/* User + logout */}
+      <div className="flex items-center gap-3 border-t border-[var(--brand-gold)]/20 bg-black/20 px-4 py-3">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand-gold)] font-[var(--font-display)] text-sm font-bold text-[var(--brand-navy)]">
+          AB
         </div>
+        <div className="flex-1 min-w-0">
+          <div className="truncate text-[13px] font-medium text-white">Mi cuenta</div>
+          <div className="truncate font-mono text-[10px] text-white/50">Plan Gratis</div>
+        </div>
+        <button
+          onClick={handleLogout}
+          aria-label="Cerrar sesion"
+          className="rounded-lg p-1.5 text-white/50 transition-all hover:bg-white/[0.06] hover:text-white"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
       </div>
     </>
   );
@@ -162,8 +116,8 @@ export function Sidebar() {
     <>
       {/* Mobile toggle */}
       <button
-        aria-label="Abrir menú"
-        className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl bg-[#0f172a] shadow-lg shadow-black/20 md:hidden"
+        aria-label="Abrir menu"
+        className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded bg-[var(--brand-navy)] shadow-lg lg:hidden"
         onClick={() => setOpen(!open)}
       >
         {open ? (
@@ -173,42 +127,58 @@ export function Sidebar() {
         )}
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden"
-            onClick={() => setOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+      {/* Mobile overlay */}
+      {open && (
+        <div
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
+          onClick={() => setOpen(false)}
+        />
+      )}
 
       {/* Mobile sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 flex h-screen w-64 flex-col transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] md:hidden",
+          "fixed left-0 top-0 z-40 flex h-screen w-[260px] flex-col transition-transform duration-300 lg:hidden",
           open ? "translate-x-0" : "-translate-x-full"
         )}
-        style={{
-          background: "linear-gradient(180deg, #0a0f1e 0%, #0f172a 50%, #111827 100%)",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
-        }}
+        style={{ background: "linear-gradient(180deg, var(--brand-navy) 0%, var(--brand-navy-2) 100%)" }}
       >
         {sidebarContent}
       </aside>
 
       {/* Desktop sidebar */}
       <aside
-        className="fixed left-0 top-0 z-40 hidden h-screen w-64 flex-col md:flex"
-        style={{
-          background: "linear-gradient(180deg, #0a0f1e 0%, #0f172a 50%, #111827 100%)",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
-        }}
+        className="sticky top-0 hidden h-screen w-[260px] flex-col lg:flex"
+        style={{ background: "linear-gradient(180deg, var(--brand-navy) 0%, var(--brand-navy-2) 100%)" }}
       >
         {sidebarContent}
       </aside>
     </>
+  );
+}
+
+function NavItem({ item, active, onNavigate }: { item: { num: string; label: string; href: string }; active: boolean; onNavigate: () => void }) {
+  return (
+    <li>
+      <Link
+        href={item.href}
+        onClick={onNavigate}
+        className={cn(
+          "group flex items-center gap-3 rounded px-2.5 py-2 text-[13px] transition-colors",
+          active
+            ? "bg-[var(--brand-gold)]/12 text-white"
+            : "text-white/75 hover:bg-white/5 hover:text-white"
+        )}
+      >
+        <span className={cn(
+          "w-6 font-[var(--font-display)] text-[12px] italic text-right",
+          active ? "text-[var(--brand-gold)]" : "text-white/40 group-hover:text-[var(--brand-gold)]/80"
+        )}>
+          {item.num}
+        </span>
+        <span className="flex-1">{item.label}</span>
+        {active && <span className="h-1 w-1 rounded-full bg-[var(--brand-gold)]" />}
+      </Link>
+    </li>
   );
 }
