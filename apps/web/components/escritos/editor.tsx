@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
-import { Copy, Download, Save, Check, FileText, AlignJustify } from "lucide-react";
+import { Copy, Download, Save, Check, AlignJustify } from "lucide-react";
 import type { Escrito } from "@/types";
 
 interface EscritoEditorProps {
@@ -11,10 +11,10 @@ interface EscritoEditorProps {
 }
 
 export function EscritoEditor({ escrito }: EscritoEditorProps) {
-  const [content, setContent]   = useState(escrito.contenido_editado || escrito.contenido_generado);
-  const [saving, setSaving]     = useState(false);
-  const [copied, setCopied]     = useState(false);
-  const [saveOk, setSaveOk]     = useState(false);
+  const [content, setContent] = useState(escrito.contenido_editado || escrito.contenido_generado);
+  const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [saveOk, setSaveOk] = useState(false);
   const supabase = createClient();
 
   const wordCount = useMemo(
@@ -66,7 +66,7 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
         {
           properties: {
             page: {
-              size:   { width: 11906, height: 16838 },
+              size: { width: 11906, height: 16838 },
               margin: { top: 1417, right: 1417, bottom: 1417, left: 1417 },
             },
           },
@@ -80,42 +80,34 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
   }
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      {/* ── Toolbar ─────────────────────────────────────────── */}
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-3">
-        {/* Title + icon */}
+    <div className="flex h-full flex-col card-editorial overflow-hidden">
+      {/* Toolbar */}
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-[var(--brand-paper)] px-4 py-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1e3a5f]">
-            <FileText className="h-3.5 w-3.5 text-white" />
-          </div>
-          <h2 className="truncate text-sm font-bold text-[#0f172a]">
+          <div className="font-[var(--font-display)] text-xl font-semibold italic text-[var(--brand-gold)]">§</div>
+          <h2 className="truncate font-[var(--font-display)] text-[14px] font-semibold text-[var(--brand-navy)]">
             {escrito.titulo}
           </h2>
         </div>
 
-        {/* Action buttons */}
         <div className="flex shrink-0 items-center gap-2">
           <button
             onClick={handleCopy}
             title="Copiar al portapapeles"
-            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+            className={`flex items-center gap-1.5 rounded border px-3 py-1.5 text-[11px] font-semibold transition-all ${
               copied
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-100"
+                ? "border-[var(--brand-gold)] bg-[var(--brand-gold)]/10 text-[var(--brand-navy)]"
+                : "border-border bg-white text-[var(--brand-ink-2)] hover:border-[var(--brand-gold)]"
             }`}
           >
-            {copied ? (
-              <Check className="h-3.5 w-3.5" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? "Copiado" : "Copiar"}
           </button>
 
           <button
             onClick={handleExportDocx}
             title="Exportar como DOCX"
-            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-all duration-200 hover:border-slate-300 hover:bg-slate-100"
+            className="flex items-center gap-1.5 rounded border border-border bg-white px-3 py-1.5 text-[11px] font-semibold text-[var(--brand-ink-2)] hover:border-[var(--brand-gold)]"
           >
             <Download className="h-3.5 w-3.5" />
             DOCX
@@ -125,10 +117,10 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
             onClick={handleSave}
             disabled={saving}
             title="Guardar cambios"
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all duration-200 disabled:opacity-60 ${
+            className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-[11px] font-bold transition-all disabled:opacity-60 ${
               saveOk
-                ? "bg-emerald-600 text-white"
-                : "bg-[#1e3a5f] text-white hover:bg-[#1d4ed8] hover:shadow-md"
+                ? "bg-[var(--brand-gold)] text-[var(--brand-navy)]"
+                : "bg-[var(--brand-navy)] text-white hover:bg-[var(--brand-navy-2)]"
             }`}
           >
             {saving ? (
@@ -151,35 +143,34 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
         </div>
       </div>
 
-      {/* ── Document area ───────────────────────────────────── */}
-      <div className="flex flex-1 flex-col overflow-hidden bg-[#faf9f7]">
+      {/* Document area */}
+      <div className="flex flex-1 flex-col overflow-hidden bg-[var(--brand-paper)]">
         <Textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           className={`
             flex-1 resize-none rounded-none border-0 bg-transparent p-8 shadow-none
-            font-serif text-[15px] leading-[1.9] text-slate-800
-            placeholder:text-slate-400
+            font-[var(--font-serif)] text-[15px] leading-[1.9] text-[var(--brand-ink)]
+            placeholder:text-[var(--brand-mute)]
             focus-visible:ring-0 focus-visible:ring-offset-0
             min-h-[520px]
           `}
-          style={{ fontFamily: "'Times New Roman', Times, serif" }}
           spellCheck
         />
       </div>
 
-      {/* ── Status bar ──────────────────────────────────────── */}
-      <div className="flex shrink-0 items-center justify-between border-t border-slate-100 bg-slate-50 px-4 py-2">
-        <div className="flex items-center gap-3 text-[10px] text-slate-500">
+      {/* Status bar */}
+      <div className="flex shrink-0 items-center justify-between border-t border-border bg-[var(--brand-paper-2)] px-4 py-2">
+        <div className="flex items-center gap-3 font-mono text-[10px] text-[var(--brand-mute)]">
           <span className="flex items-center gap-1">
             <AlignJustify className="h-3 w-3" />
             {wordCount.toLocaleString("es-AR")} palabras
           </span>
-          <span className="text-slate-300">·</span>
+          <span className="opacity-40">·</span>
           <span>{charCount.toLocaleString("es-AR")} caracteres</span>
         </div>
-        <div className="text-[10px] font-medium text-slate-400">
-          Formato: Times New Roman 12pt · A4 · Interlineado doble
+        <div className="font-mono text-[10px] text-[var(--brand-mute)]">
+          Times New Roman 12pt · A4 · Interlineado doble
         </div>
       </div>
     </div>
