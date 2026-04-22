@@ -1,15 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import {
-  FileText,
-  MessageSquare,
-  FolderOpen,
-  ArrowRight,
-  TrendingUp,
-  Sparkles,
-  Clock,
-  Zap,
-} from "lucide-react";
-import Link from "next/link";
 import { PLAN_LIMITS } from "@/types";
 import type { Plan } from "@/types";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
@@ -53,11 +42,17 @@ export default async function DashboardPage() {
       ? 0
       : Math.min(100, (consultasUsadas / limits.consultas_mes) * 100);
 
-  const firstName = profile?.full_name?.split(" ")[0] ?? "";
+  const fullName = profile?.full_name ?? "";
+  const firstName = fullName.split(" ")[0] ?? "";
 
   const hour = new Date().getHours();
   const greeting =
-    hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
+    hour < 12 ? "Buenos dias" : hour < 19 ? "Buenas tardes" : "Buenas noches";
+
+  const { count: casosCount } = await supabase
+    .from("casos")
+    .select("*", { count: "exact", head: true })
+    .eq("estado", "activo");
 
   return (
     <DashboardClient
@@ -72,6 +67,8 @@ export default async function DashboardPage() {
       consultasLimit={limits.consultas_mes}
       escritosPct={escritosPct}
       consultasPct={consultasPct}
+      casosActivos={casosCount ?? 0}
+      userName={fullName}
     />
   );
 }

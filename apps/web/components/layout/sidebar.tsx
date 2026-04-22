@@ -9,21 +9,35 @@ import { useState } from "react";
 
 const nav = [
   { num: "I",   label: "Dashboard",    href: "/dashboard" },
-  { num: "II",  label: "Asistente IA", href: "/asistente" },
-  { num: "III", label: "Escritos",     href: "/escritos" },
+  { num: "II",  label: "Escritos",     href: "/escritos" },
+  { num: "III", label: "Asistente IA", href: "/asistente" },
   { num: "IV",  label: "Casos",        href: "/casos" },
   { num: "V",   label: "Calculadoras", href: "/calculadoras" },
 ];
 
 const secondary = [
-  { num: "VI",  label: "Configuración", href: "/config" },
+  { num: "VI",  label: "Configuracion", href: "/config" },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  userName?: string;
+  plan?: string;
+  escritosUsados?: number;
+  escritosLimit?: number;
+}
+
+export function Sidebar({ userName, plan = "free", escritosUsados = 0, escritosLimit = 3 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
   const [open, setOpen] = useState(false);
+
+  const planLabel = plan === "profesional" ? "PLAN PROFESIONAL" : plan === "estudio" ? "PLAN ESTUDIO" : "PLAN GRATUITO";
+  const pct = escritosLimit === Infinity ? 0 : Math.min(100, Math.round((escritosUsados / escritosLimit) * 100));
+  const mesAbrev = new Date().toLocaleDateString("es-AR", { month: "short" }).toUpperCase().replace(".", "");
+  const initials = userName
+    ? userName.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase()
+    : "AB";
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -33,7 +47,7 @@ export function Sidebar() {
 
   const sidebarContent = (
     <>
-      {/* Logo block */}
+      {/* Logo */}
       <Link href="/dashboard" className="flex items-center gap-3 border-b border-[var(--brand-gold)]/20 px-5 py-5">
         <div className="flex h-[38px] w-[38px] items-center justify-center rounded bg-[var(--brand-gold)] font-[var(--font-display)] text-[22px] font-bold italic text-[var(--brand-navy)]">
           L
@@ -44,15 +58,15 @@ export function Sidebar() {
         </div>
       </Link>
 
-      {/* Masthead meta */}
-      <div className="border-b border-[var(--brand-gold)]/15 px-5 py-3">
-        <div className="flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.14em] text-white/50">
-          <span>WORKSPACE</span>
-          <span className="text-[var(--brand-gold)]/80">
-            {new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "short" }).toUpperCase()}
-          </span>
+      {/* User info */}
+      {userName && (
+        <div className="border-b border-[var(--brand-gold)]/15 px-5 py-3">
+          <div className="text-[13px] font-medium text-white truncate">{userName}</div>
+          <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/50 mt-0.5">
+            WORKSPACE · {new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "short" }).toUpperCase()}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Primary nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4">
@@ -75,31 +89,28 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* Plan card */}
-      <div className="border-t border-[var(--brand-gold)]/20 p-4">
-        <div className="rounded bg-[var(--brand-navy-2)] border border-[var(--brand-gold)]/25 p-3.5">
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--brand-gold)]">Plan gratuito</div>
-            <div className="font-[var(--font-display)] text-[11px] italic text-[var(--brand-gold)]">§</div>
-          </div>
-          <div className="font-[var(--font-display)] text-[22px] font-semibold leading-none text-white mb-1">
-            0<span className="text-[14px] text-white/50 font-normal">/3</span>
-          </div>
-          <div className="text-[10px] text-white/60 mb-2">escritos este mes</div>
-          <div className="h-[3px] w-full overflow-hidden rounded-full bg-white/10">
-            <div className="h-full bg-[var(--brand-gold)]" style={{ width: "0%" }} />
-          </div>
+      {/* Plan usage */}
+      <div className="border-t border-[var(--brand-gold)]/20 px-4 py-3">
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/70">{planLabel}</div>
+          <div className="font-mono text-[11px] font-bold text-[var(--brand-gold)]">{pct}% · {mesAbrev}</div>
+        </div>
+        <div className="h-[3px] w-full overflow-hidden rounded-full bg-white/10 mb-1.5">
+          <div className="h-full bg-[var(--brand-gold)] transition-all" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="font-mono text-[10px] text-white/50">
+          {escritosUsados}/{escritosLimit === Infinity ? "∞" : escritosLimit} escritos · consultas {plan === "free" ? "20/mes" : "ilim."}
         </div>
       </div>
 
       {/* User + logout */}
       <div className="flex items-center gap-3 border-t border-[var(--brand-gold)]/20 bg-black/20 px-4 py-3">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand-gold)] font-[var(--font-display)] text-sm font-bold text-[var(--brand-navy)]">
-          AB
+          {initials}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="truncate text-[13px] font-medium text-white">Mi cuenta</div>
-          <div className="truncate font-mono text-[10px] text-white/50">Plan Gratis</div>
+          <div className="truncate text-[13px] font-medium text-white">{userName || "Mi cuenta"}</div>
+          <div className="truncate font-mono text-[10px] text-white/50">{planLabel}</div>
         </div>
         <button
           onClick={handleLogout}
@@ -120,19 +131,12 @@ export function Sidebar() {
         className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded bg-[var(--brand-navy)] shadow-lg lg:hidden"
         onClick={() => setOpen(!open)}
       >
-        {open ? (
-          <X className="h-5 w-5 text-white" />
-        ) : (
-          <Menu className="h-5 w-5 text-white" />
-        )}
+        {open ? <X className="h-5 w-5 text-white" /> : <Menu className="h-5 w-5 text-white" />}
       </button>
 
       {/* Mobile overlay */}
       {open && (
-        <div
-          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
-          onClick={() => setOpen(false)}
-        />
+        <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setOpen(false)} />
       )}
 
       {/* Mobile sidebar */}
