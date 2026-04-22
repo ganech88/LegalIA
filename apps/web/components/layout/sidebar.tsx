@@ -8,15 +8,21 @@ import { LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const nav = [
-  { num: "I",   label: "Dashboard",    href: "/dashboard" },
-  { num: "II",  label: "Escritos",     href: "/escritos" },
-  { num: "III", label: "Asistente IA", href: "/asistente" },
-  { num: "IV",  label: "Casos",        href: "/casos" },
-  { num: "V",   label: "Calculadoras", href: "/calculadoras" },
+  { num: "I",    label: "Dashboard",    href: "/dashboard" },
+  { num: "II",   label: "Escritos",     href: "/escritos" },
+  { num: "III",  label: "Asistente IA", href: "/asistente" },
+  { num: "IV",   label: "Casos",        href: "/casos" },
+  { num: "V",    label: "Calculadoras", href: "/calculadoras" },
+];
+
+const biblioteca = [
+  { num: "VI",   label: "Codigos y Leyes", href: "/biblioteca/codigos" },
+  { num: "VII",  label: "Jurisprudencia",  href: "/biblioteca/jurisprudencia" },
+  { num: "VIII", label: "Busqueda",        href: "/biblioteca/busqueda" },
 ];
 
 const secondary = [
-  { num: "VI",  label: "Configuracion", href: "/config" },
+  { num: "IX",  label: "Configuracion", href: "/config" },
 ];
 
 interface SidebarProps {
@@ -75,6 +81,15 @@ export function Sidebar({ userName, plan = "free", escritosUsados = 0, escritosL
         </div>
         <ul className="space-y-0.5">
           {nav.map(item => (
+            <NavItem key={item.href} item={item} active={pathname === item.href || pathname.startsWith(item.href + "/")} onNavigate={() => setOpen(false)} />
+          ))}
+        </ul>
+
+        <div className="mt-6 px-2 pb-2 text-[10px] uppercase tracking-[0.16em] text-[var(--brand-gold)]/70 font-mono">
+          ◆ Biblioteca
+        </div>
+        <ul className="space-y-0.5">
+          {biblioteca.map(item => (
             <NavItem key={item.href} item={item} active={pathname === item.href || pathname.startsWith(item.href + "/")} onNavigate={() => setOpen(false)} />
           ))}
         </ul>

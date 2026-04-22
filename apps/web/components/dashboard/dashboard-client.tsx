@@ -6,34 +6,36 @@ import { Send, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Plan } from "@/types";
 
+interface CasoItem {
+  id: string;
+  caratula: string;
+  expediente: string | null;
+  fuero: string;
+  jurisdiccion: string;
+  juzgado: string | null;
+  estado: string;
+}
+
+interface ActivityItem {
+  tipo: "escrito" | "consulta" | "caso";
+  texto: string;
+  fecha: string;
+}
+
 interface DashboardClientProps {
   greeting: string;
   firstName: string;
   plan: Plan;
   planLabel: string;
-  planColor: string;
   escritosUsados: number;
   consultasUsadas: number;
   escritosLimit: number;
   consultasLimit: number;
-  escritosPct: number;
-  consultasPct: number;
-  casosActivos?: number;
-  userName?: string;
+  casosActivos: number;
+  userName: string;
+  casos: CasoItem[];
+  actividad: ActivityItem[];
 }
-
-const DEMO_CASOS = [
-  { exp: "42.118/26", caratula: "Pereyra, Juan c/ ACME SRL s/ despido sin causa", detalle: "CNAT · Sala III · Juzgado N° 14 · 3 escritos generados", status: "vto", vto: "19/04" },
-  { exp: "38.902/26", caratula: "Gomez, Ana c/ Obra Social XX s/ amparo", detalle: "Fuero Civil · Juzgado N° 82 · 2 escritos generados", status: "activo" },
-  { exp: "45.331/26", caratula: "Martin, Lucas c/ ART Provincia s/ accidente laboral", detalle: "CNAT · Sala VII · 1 escrito generado", status: "activo" },
-  { exp: "51.207/25", caratula: "Rodriguez, C. c/ Empresa XX s/ diferencias salariales", detalle: "SCBA · En etapa probatoria", status: "activo" },
-];
-
-const DEMO_ACTIVIDAD = [
-  { hora: "10:47", texto: "Generaste CD despido indirecto para caso", extra: "EXP 45.331/26", hoy: true },
-  { hora: "09:22", texto: "Consulta IA · multa art. 80 LCT · 3 fuentes citadas", hoy: true },
-  { hora: "AYER", texto: "Alta de caso EXP 45.331/26 — Martin. L. c/ ART Provincia", hoy: false },
-];
 
 const PLANTILLAS = [
   { titulo: "Demanda laboral — despido sin causa", tipo: "laboral" },
@@ -41,6 +43,19 @@ const PLANTILLAS = [
   { titulo: "Contestacion de demanda", tipo: "laboral" },
   { titulo: "Recurso de apelacion", tipo: "procesal" },
 ];
+
+function formatActivityTime(fecha: string): string {
+  const d = new Date(fecha);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffH = diffMs / (1000 * 60 * 60);
+
+  if (diffH < 24) {
+    return d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  }
+  if (diffH < 48) return "AYER";
+  return d.toLocaleDateString("es-AR", { day: "2-digit", month: "short" }).toUpperCase();
+}
 
 export function DashboardClient({
   greeting,
@@ -51,7 +66,9 @@ export function DashboardClient({
   consultasUsadas,
   escritosLimit,
   consultasLimit,
-  casosActivos = 7,
+  casosActivos,
+  casos,
+  actividad,
 }: DashboardClientProps) {
   const [chatInput, setChatInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -81,6 +98,7 @@ export function DashboardClient({
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Busca un fuero, jurisprudencia, expediente..."
             className="flex-1 bg-transparent outline-none text-[var(--brand-ink)] placeholder:text-[var(--brand-mute)]"
+            onKeyDown={e => { if (e.key === "Enter" && searchQuery.trim()) window.location.href = `/biblioteca/busqueda?q=${encodeURIComponent(searchQuery)}`; }}
           />
         </div>
         <span className="rounded-full border border-[var(--brand-gold)] bg-[var(--brand-gold-pale)] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--brand-navy)] shrink-0">
@@ -101,7 +119,7 @@ export function DashboardClient({
             <em className="italic text-[var(--brand-gold)]">{firstName ? `${firstName}.` : "abogado/a."}</em>
           </h1>
           <p className="mt-3 max-w-[700px] text-[14px] leading-[1.6] text-[var(--brand-ink-2)] font-[var(--font-serif)]">
-            Hoy tenes <strong>{escritosUsados} escritos en borrador</strong> y <strong>1 vencimiento procesal</strong> dentro de las proximas 72hs.
+            Hoy tenes <strong>{escritosUsados} escritos en borrador</strong> y <strong>{casosActivos} casos activos</strong>.
             El asistente IA esta disponible con el corpus actualizado al {new Date().toLocaleDateString("es-AR")}.
           </p>
         </header>
@@ -110,7 +128,7 @@ export function DashboardClient({
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatCard num="I" label="Escritos / mes" value={escritosUsados} sub={`de ${escritosLimit === Infinity ? "∞" : escritosLimit} en tu plan`} />
           <StatCard num="II" label="Consultas IA" value={consultasUsadas} sub={`de ${consultasLimit === Infinity ? "∞" : consultasLimit} este mes`} />
-          <StatCard num="III" label="Casos activos" value={casosActivos} sub="1 con vencimiento" accent />
+          <StatCard num="III" label="Casos activos" value={casosActivos} sub={casosActivos > 0 ? `${casosActivos} expedientes` : "sin expedientes"} accent />
           <StatCard num="IV" label="Tiempo ahorrado" value={`${tiempoAhorrado}h`} sub="estimado por IA" />
         </div>
 
@@ -142,7 +160,7 @@ export function DashboardClient({
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--brand-navy)] text-[var(--brand-gold)] font-serif italic text-sm">§</div>
                 <div className="rounded border border-border bg-white px-3 py-2 text-[12px] text-[var(--brand-ink)] leading-[1.6] max-w-[90%]">
                   <p>El plazo de prescripcion para reclamar creditos laborales es de dos (2) años, desde que se devenga la obligacion, conforme al <span className="cite-chip">Art. 256 LCT</span>.</p>
-                  <p className="mt-2">Los rubros indemnizatorios que comprende la liquidacion final son: la Indemnizacion por antiguedad (<span className="cite-chip">Art. 245 LCT</span>), las indemnizaciones sustitutivas del preaviso y de integracion del mes de despido (<span className="cite-chip">Arts. 231-233 LCT</span>), vacaciones proporcionales, SAC proporcional, y dias trabajados.</p>
+                  <p className="mt-2">Los rubros indemnizatorios comprenden: la Indemnizacion por antiguedad (<span className="cite-chip">Art. 245 LCT</span>), las indemnizaciones sustitutivas del preaviso e integracion del mes de despido (<span className="cite-chip">Arts. 231-233 LCT</span>), vacaciones proporcionales, SAC proporcional, y dias trabajados.</p>
                 </div>
               </div>
             </div>
@@ -188,16 +206,15 @@ export function DashboardClient({
               </ul>
             </section>
 
-            {/* Calculator widget */}
             <Link href="/calculadoras/art-245" className="block relative overflow-hidden rounded bg-gradient-to-br from-[var(--brand-navy)] to-[var(--brand-navy-2)] p-5 text-white hover:shadow-lg transition-shadow">
               <div aria-hidden className="absolute -top-8 -right-8 rounded-full border border-[var(--brand-gold)] opacity-20" style={{ width: 120, height: 120 }} />
               <div className="relative z-10">
                 <div className="text-[10px] tracking-[0.16em] uppercase text-[var(--brand-gold-2)] mb-1">◆ Calculadora · art. 245 LCT</div>
                 <h4 className="font-[var(--font-display)] text-[20px] font-semibold mb-1 tracking-[-0.01em]">Indemnizacion por despido</h4>
-                <div className="font-[var(--font-display)] text-[28px] font-semibold text-[var(--brand-gold)] tracking-[-0.02em] mb-2">
-                  $ 3.240.000
-                </div>
-                <p className="text-[11px] opacity-70">Ultimo calculo · Antiguedad, preaviso, SAC</p>
+                <p className="text-[11px] opacity-70 mb-2">Antiguedad, preaviso, integracion, SAC</p>
+                <span className="inline-block rounded bg-[var(--brand-gold)] px-3.5 py-2 text-[12px] font-bold text-[var(--brand-navy)]">
+                  Abrir calculadora →
+                </span>
               </div>
             </Link>
           </aside>
@@ -218,26 +235,34 @@ export function DashboardClient({
                 Ver todos los expedientes →
               </Link>
             </header>
-            <div className="divide-y divide-border">
-              {DEMO_CASOS.map(c => (
-                <div key={c.exp} className="flex items-center gap-4 px-6 py-4 hover:bg-[var(--brand-paper)] transition-colors">
-                  <div className="font-mono text-[12px] text-[var(--brand-mute)] w-[100px] shrink-0">EXP {c.exp}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-[var(--font-serif)] text-[14px] font-medium text-[var(--brand-navy)] truncate">{c.caratula}</div>
-                    <div className="text-[11px] text-[var(--brand-mute)] mt-0.5">{c.detalle}</div>
-                  </div>
-                  {c.status === "vto" ? (
-                    <span className="rounded border border-[var(--brand-red)]/30 bg-[var(--brand-red)]/5 px-2 py-0.5 font-mono text-[10px] font-bold text-[var(--brand-red)]">
-                      VTO. {c.vto}
-                    </span>
-                  ) : (
+            {casos.length === 0 ? (
+              <div className="px-6 py-10 text-center">
+                <div className="font-[var(--font-display)] text-4xl italic text-[var(--brand-gold)] opacity-40 mb-3">IV</div>
+                <p className="text-[13px] text-[var(--brand-mute)] mb-3">Todavia no tenes casos cargados.</p>
+                <Link href="/casos" className="inline-block rounded bg-[var(--brand-navy)] px-4 py-2 text-[12px] font-semibold text-white hover:bg-[var(--brand-navy-2)]">
+                  Crear primer caso →
+                </Link>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {casos.map(c => (
+                  <div key={c.id} className="flex items-center gap-4 px-6 py-4 hover:bg-[var(--brand-paper)] transition-colors">
+                    <div className="font-mono text-[12px] text-[var(--brand-mute)] w-[100px] shrink-0">
+                      {c.expediente ? `EXP ${c.expediente}` : "SIN EXP"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-[var(--font-serif)] text-[14px] font-medium text-[var(--brand-navy)] truncate">{c.caratula}</div>
+                      <div className="text-[11px] text-[var(--brand-mute)] mt-0.5">
+                        {c.jurisdiccion} · {c.fuero}{c.juzgado ? ` · ${c.juzgado}` : ""}
+                      </div>
+                    </div>
                     <span className="rounded border border-[var(--brand-navy)]/30 bg-[var(--brand-navy)]/5 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-[var(--brand-navy)]">
                       ACTIVO
                     </span>
-                  )}
-                </div>
-              ))}
-            </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Activity */}
@@ -246,22 +271,25 @@ export function DashboardClient({
               <h2 className="font-[var(--font-display)] text-lg font-semibold text-[var(--brand-navy)]">Actividad</h2>
               <Link href="/escritos/historial" className="text-[11px] text-[var(--brand-navy)] border-b border-[var(--brand-gold)] pb-px hover:text-[var(--brand-gold)]">Historial →</Link>
             </header>
-            <div className="divide-y divide-border">
-              {DEMO_ACTIVIDAD.map((a, i) => (
-                <div key={i} className="flex gap-3 px-5 py-3.5">
-                  <span className={cn(
-                    "font-mono text-[11px] font-bold w-[48px] shrink-0",
-                    a.hoy ? "text-[var(--brand-gold)]" : "text-[var(--brand-mute)]"
-                  )}>
-                    {a.hora}
-                  </span>
-                  <div className="text-[13px] text-[var(--brand-ink)] leading-[1.5]">
-                    {a.texto}
-                    {a.extra && <span className="font-mono text-[11px] text-[var(--brand-mute)] ml-1">{a.extra}</span>}
+            {actividad.length === 0 ? (
+              <div className="px-5 py-10 text-center">
+                <p className="text-[13px] text-[var(--brand-mute)]">Sin actividad reciente. Genera un escrito o consulta al asistente IA.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {actividad.map((a, i) => (
+                  <div key={i} className="flex gap-3 px-5 py-3.5">
+                    <span className={cn(
+                      "font-mono text-[11px] font-bold w-[52px] shrink-0",
+                      a.tipo === "escrito" ? "text-[var(--brand-gold)]" : a.tipo === "consulta" ? "text-[var(--brand-navy)]" : "text-[var(--brand-mute)]"
+                    )}>
+                      {formatActivityTime(a.fecha)}
+                    </span>
+                    <div className="text-[13px] text-[var(--brand-ink)] leading-[1.5] truncate">{a.texto}</div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
         </div>
 
