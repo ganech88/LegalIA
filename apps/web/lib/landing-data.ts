@@ -1,5 +1,15 @@
-import { FileText, MessageSquare, Calculator, CheckCircle2 } from "lucide-react";
+import { FileText, MessageSquare, Calculator } from "lucide-react";
 import type { ElementType } from "react";
+
+/**
+ * Datos de la landing.
+ *
+ * IMPORTANTE (cumplimiento — Ley 24.240 de Defensa del Consumidor):
+ * No incluir testimonios, métricas ni resultados que no sean reales y
+ * verificables. Agregar testimonios SOLO con consentimiento expreso del
+ * profesional y datos reales. Las métricas deben reflejar valores efectivos
+ * del producto (no proyecciones presentadas como hechos).
+ */
 
 export interface Feature {
   icon: ElementType;
@@ -17,6 +27,7 @@ export interface Testimonial {
   color: string;
   quote: string;
   stars: number;
+  consentVerified: boolean; // solo true si el profesional dio consentimiento expreso
 }
 
 export interface Plan {
@@ -37,7 +48,7 @@ export const FEATURES: Feature[] = [
     iconColor: "text-blue-600",
     title: "Generador de escritos",
     description:
-      "Demandas laborales, cartas documento, contestaciones y recursos. Formato procesal argentino correcto por jurisdicción — CABA, PBA y nacional.",
+      "Demandas laborales, cartas documento, contestaciones y recursos. Formato procesal argentino por jurisdicción — CABA, PBA y nacional.",
     tag: "Disponible",
   },
   {
@@ -46,7 +57,7 @@ export const FEATURES: Feature[] = [
     iconColor: "text-emerald-600",
     title: "Asistente legal IA",
     description:
-      "Consultá sobre la LCT, CCCN, CPCCN y más. Respuestas con citas de artículos reales. Sin alucinaciones, con fuentes verificables.",
+      "Consultá sobre la LCT, CCCN, CPCCN y más. Las respuestas citan los artículos para que puedas verificarlos antes de usarlos.",
     tag: "Disponible",
   },
   {
@@ -55,40 +66,16 @@ export const FEATURES: Feature[] = [
     iconColor: "text-amber-600",
     title: "Calculadoras legales",
     description:
-      "Indemnización por despido, intereses CNAT, actualización por RIPTE/IPC. Tasas actualizadas automáticamente.",
-    tag: "Próximamente",
+      "Indemnización por despido (art. 245 LCT), Ley 25.323, intereses y actualización. Verificá cada rubro antes de presentar.",
+    tag: "Disponible",
   },
 ];
 
-export const TESTIMONIALS: Testimonial[] = [
-  {
-    name: "Dra. Claudia Rissotto",
-    role: "Abogada laboralista — CPACF",
-    initials: "CR",
-    color: "bg-indigo-600",
-    quote:
-      "Reduzco el tiempo de preparación de demandas un 70%. Lo que antes me llevaba 3 horas, ahora lo tengo en 20 minutos. Sigo siendo yo quien revisa, pero la base es impecable.",
-    stars: 5,
-  },
-  {
-    name: "Dr. Martín Alderete",
-    role: "Estudio Alderete & Asociados — La Plata",
-    initials: "MA",
-    color: "bg-amber-600",
-    quote:
-      "Las citas de artículos son exactas. Por primera vez confío en una herramienta de IA para mis escritos civiles. Le recomiendo LegalIA a todos mis colegas del Colegio.",
-    stars: 5,
-  },
-  {
-    name: "Dra. Florencia Paz",
-    role: "Abogada civilista — CASI",
-    initials: "FP",
-    color: "bg-teal-600",
-    quote:
-      "La interfaz es clara y el asistente entiende los matices del derecho argentino. No es ChatGPT con un prompt legal — es otra categoría.",
-    stars: 5,
-  },
-];
+/**
+ * Sin testimonios hasta tener casos reales con consentimiento.
+ * Reemplazar por testimonios verificados (consentVerified: true) en lanzamiento.
+ */
+export const TESTIMONIALS: Testimonial[] = [];
 
 export const PLANS: Plan[] = [
   {
@@ -99,6 +86,7 @@ export const PLANS: Plan[] = [
     features: [
       "3 escritos por mes",
       "20 consultas al asistente IA",
+      "Calculadoras legales",
       "Exportar a Word",
       "Soporte por email",
     ],
@@ -141,30 +129,28 @@ export const PLANS: Plan[] = [
 ];
 
 export const TRUST_INDICATORS = [
-  { text: "Datos encriptados" },
-  { text: "Escrito en 30 segundos" },
-  { text: "Artículos verificados" },
+  { text: "Datos cifrados en reposo" },
+  { text: "Cada cita es verificable" },
+  { text: "Vos revisás antes de presentar" },
 ] as const;
 
-export const STATS = [
-  { value: "+2.400", label: "escritos generados" },
-  { value: "98%",    label: "precisión en citas legales" },
-  { value: "30 seg", label: "tiempo promedio por escrito" },
-  { value: "5 fueros", label: "jurisdicciones cubiertas" },
+/**
+ * Propuestas de valor honestas (no métricas inventadas). Si en el futuro se
+ * muestran números reales (escritos generados, usuarios), deben provenir de la
+ * base de datos, no de constantes.
+ */
+export const VALUE_PROPS = [
+  { value: "Art. 245", label: "liquidación laboral calculada al detalle" },
+  { value: "CABA · PBA", label: "formato procesal por jurisdicción" },
+  { value: "Con citas", label: "artículos de ley que podés verificar" },
+  { value: "DOCX", label: "exportás listo para presentar" },
 ] as const;
 
 export const LEGAL_TAGS = [
   "LCT 20.744",
   "CCCN",
   "CPCCN",
-  "CPLCABA",
   "Ley 24.557",
+  "Ley 25.323",
   "Fallos CSJN",
-] as const;
-
-export const STORY_STATS = [
-  { label: "Precisión en citas",  value: "98%",  colorClass: "border-l-blue-500" },
-  { label: "Fuentes cubiertas",   value: "12+",  colorClass: "border-l-amber-500" },
-  { label: "Abogados activos",    value: "240+", colorClass: "border-l-emerald-500" },
-  { label: "Escritos generados",  value: "2.4K", colorClass: "border-l-violet-500" },
 ] as const;

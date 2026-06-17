@@ -39,6 +39,17 @@ export function EscritosClient({ templates }: EscritosClientProps) {
           <p className="mt-2 text-[15px] text-[var(--brand-ink-2)] max-w-[600px]">
             Genera borradores con formato procesal argentino. Cada plantilla es ajustable al caso.
           </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href="/escritos/personalizado" className="rounded border border-[var(--brand-navy)] px-3 py-1.5 text-[12px] font-semibold text-[var(--brand-navy)] hover:bg-[var(--brand-paper)]">
+              + Escrito personalizado
+            </Link>
+            <Link href="/escritos/revisar" className="rounded border border-[var(--brand-gold)] bg-[var(--brand-gold)]/10 px-3 py-1.5 text-[12px] font-semibold text-[var(--brand-navy)] hover:bg-[var(--brand-gold)]/20">
+              Revisar un escrito propio
+            </Link>
+            <Link href="/escritos/historial" className="rounded border border-border px-3 py-1.5 text-[12px] font-semibold text-[var(--brand-ink-2)] hover:border-[var(--brand-gold)]">
+              Historial
+            </Link>
+          </div>
         </header>
 
         {/* Templates grid */}

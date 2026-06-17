@@ -12,17 +12,19 @@ const nav = [
   { num: "II",   label: "Escritos",     href: "/escritos" },
   { num: "III",  label: "Asistente IA", href: "/asistente" },
   { num: "IV",   label: "Casos",        href: "/casos" },
-  { num: "V",    label: "Calculadoras", href: "/calculadoras" },
+  { num: "V",    label: "Agenda",       href: "/agenda" },
+  { num: "VI",   label: "Calculadoras", href: "/calculadoras" },
 ];
 
 const biblioteca = [
-  { num: "VI",   label: "Codigos y Leyes", href: "/biblioteca/codigos" },
-  { num: "VII",  label: "Jurisprudencia",  href: "/biblioteca/jurisprudencia" },
-  { num: "VIII", label: "Busqueda",        href: "/biblioteca/busqueda" },
+  { num: "VII",  label: "Codigos y Leyes", href: "/biblioteca/codigos" },
+  { num: "VIII", label: "Jurisprudencia",  href: "/biblioteca/jurisprudencia" },
+  { num: "IX",   label: "Busqueda",        href: "/biblioteca/busqueda" },
 ];
 
 const secondary = [
-  { num: "IX",  label: "Configuracion", href: "/config" },
+  { num: "X",   label: "Equipo",        href: "/equipo" },
+  { num: "XI",  label: "Configuracion", href: "/config" },
 ];
 
 interface SidebarProps {

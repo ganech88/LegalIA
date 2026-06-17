@@ -5,6 +5,8 @@ const CALCS = [
   { num: "II", title: "Accidente laboral — Ley 24.557", desc: "ILP · ILT · gran invalidez · muerte", href: "/calculadoras/art-ley-24557" },
   { num: "III", title: "Intereses", desc: "Tasa activa BNA · acta CNAT 2658/2664/2783", href: "/calculadoras/intereses" },
   { num: "IV", title: "Actualizacion IPC / RIPTE", desc: "Indexacion de creditos laborales", href: "/calculadoras/actualizacion" },
+  { num: "V", title: "Plazos y vencimientos", desc: "Días hábiles judiciales · feria · prescripción", href: "/calculadoras/plazos" },
+  { num: "VI", title: "Honorarios y tasas", desc: "Honorarios ley 27.423 · tasa de justicia · alimentos", href: "/calculadoras/honorarios" },
 ];
 
 export default function CalculadorasPage() {

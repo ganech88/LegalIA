@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 const FEATURES = [
   { num: "I", title: "Generador de escritos", desc: "Demandas laborales, cartas documento, contestaciones y recursos. Formato procesal argentino correcto por jurisdiccion — CABA, PBA y nacional." },
-  { num: "II", title: "Asistente legal IA", desc: "Consulta sobre la LCT, CCCN, CPCCN y mas. Respuestas con citas de articulos reales. Sin alucinaciones, con fuentes verificables." },
+  { num: "II", title: "Asistente legal IA", desc: "Consulta sobre la LCT, CCCN, CPCCN y mas. Cada respuesta cita los articulos para que los verifiques antes de usarlos." },
   { num: "III", title: "Calculadoras legales", desc: "Indemnizacion art. 245, ART, intereses BNA/CNAT, actualizacion por IPC y RIPTE. Indices actualizados." },
 ];
 
@@ -95,7 +95,7 @@ export default function HomePage() {
               argentino moderno.
             </h1>
             <p className="mt-8 max-w-[640px] text-[18px] leading-[1.6] text-[var(--brand-ink-2)]">
-              Genera escritos con formato procesal, consulta legislacion argentina con citas verificadas, calcula indemnizaciones y gestiona tus expedientes. Todo con IA entrenada en derecho argentino.
+              Genera escritos con formato procesal, consulta legislacion argentina con citas que podes verificar, calcula indemnizaciones y gestiona tus expedientes. IA especializada en derecho argentino.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Link href="/register" className="rounded bg-[var(--brand-navy)] px-6 py-3.5 text-[15px] font-semibold text-white hover:bg-[var(--brand-navy-2)]">
@@ -208,6 +208,8 @@ export default function HomePage() {
             <div className="flex flex-wrap gap-6 text-[13px] text-white/60">
               <a href="#features" className="hover:text-white">Funciones</a>
               <a href="#pricing" className="hover:text-white">Precios</a>
+              <Link href="/terminos" className="hover:text-white">Términos</Link>
+              <Link href="/privacidad" className="hover:text-white">Privacidad</Link>
               <Link href="/login" className="hover:text-white">Ingresar</Link>
               <Link href="/register" className="hover:text-white">Registrarse</Link>
             </div>

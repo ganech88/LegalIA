@@ -86,6 +86,15 @@ export default function JurisprudenciaPage() {
                         {fallo.tribunal}
                       </span>
                       <span className="font-mono text-[10px] text-[var(--brand-mute)]">{fallo.fecha}</span>
+                      {fallo.verificado ? (
+                        <span className="rounded border border-emerald-500/30 bg-emerald-50 px-1.5 py-0.5 font-mono text-[9px] font-bold text-emerald-700">
+                          ✓ VERIFICADO
+                        </span>
+                      ) : (
+                        <span className="rounded border border-amber-500/40 bg-amber-50 px-1.5 py-0.5 font-mono text-[9px] font-bold text-amber-700">
+                          ⚠ VERIFICAR CITA
+                        </span>
+                      )}
                     </div>
                     <h3 className="font-[var(--font-serif)] text-[14px] font-semibold text-[var(--brand-navy)] leading-tight">
                       &ldquo;{fallo.caratula}&rdquo;
@@ -98,6 +107,11 @@ export default function JurisprudenciaPage() {
 
               {expandedId === fallo.id && (
                 <div className="border-t border-border px-6 py-4 bg-[var(--brand-paper)]">
+                  {!fallo.verificado && (
+                    <div className="mb-3 rounded border border-amber-500/40 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+                      <strong>Criterio ilustrativo.</strong> La cita exacta (carátula, sala y fecha) no está confirmada. Verificá el fallo en la fuente oficial antes de citarlo en un escrito.
+                    </div>
+                  )}
                   <div className="t-overline text-[var(--brand-gold)] mb-2">SUMARIO</div>
                   <p className="font-[var(--font-serif)] text-[13px] text-[var(--brand-ink)] leading-[1.7] mb-4">
                     {fallo.sumario}

@@ -20,6 +20,16 @@ export async function POST(request: Request) {
     );
   }
 
+  const { data: rlOk } = await supabase.rpc("check_rate_limit", {
+    p_user_id: user.id, p_action: "escrito", p_max: 10, p_window_seconds: 60,
+  });
+  if (rlOk === false) {
+    return NextResponse.json(
+      { error: "Demasiadas solicitudes en poco tiempo. Esperá un momento e intentá de nuevo." },
+      { status: 429 }
+    );
+  }
+
   const { data: canUse } = await supabase.rpc("check_and_increment_usage", {
     p_user_id: user.id,
     p_kind: "escrito",
@@ -51,6 +61,14 @@ export async function POST(request: Request) {
       { temperature: 0.3, maxTokens: 4096 },
     );
 
+    if (!content?.trim()) {
+      await supabase.rpc("decrement_usage", { p_user_id: user.id, p_kind: "escrito" });
+      return NextResponse.json(
+        { error: "No se pudo generar el escrito. No se descontó de tu cuota; intentá de nuevo." },
+        { status: 502 }
+      );
+    }
+
     const titulo = `${tipo_escrito} — ${new Date().toLocaleDateString("es-AR")}`;
 
     const { data: escrito, error: insertError } = await supabase
@@ -61,7 +79,7 @@ export async function POST(request: Request) {
         tipo: "personalizado",
         titulo,
         datos_caso: { tipo_escrito, fuero, jurisdiccion, descripcion, datos_caso },
-        contenido_generado: content || "[No se pudo generar el escrito. Intentá de nuevo.]",
+        contenido_generado: content,
         jurisdiccion,
         fuero,
         modelo_usado: providerModelName(provider),
@@ -75,6 +93,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ id: escrito.id });
   } catch (error: unknown) {
+    await supabase.rpc("decrement_usage", { p_user_id: user.id, p_kind: "escrito" });
     const errMsg = error instanceof Error ? error.message : "Error desconocido";
     return NextResponse.json({ error: `Error al generar el escrito: ${errMsg}` }, { status: 502 });
   }

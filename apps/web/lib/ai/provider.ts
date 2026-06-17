@@ -1,21 +1,57 @@
 /**
- * AI Provider chain: Groq (free) → Gemini (free) → Anthropic (paid)
- * Each provider is tried in order. If one fails, the next is used.
+ * Cadena de proveedores de IA con fallback configurable.
+ *
+ * ORDEN POR DEFECTO según el tipo de tarea:
+ *  - Escritos: anthropic → groq → gemini  (calidad primero)
+ *  - Chat:     groq → gemini → anthropic  (costo/latencia primero)
+ *
+ * Se puede sobreescribir con variables de entorno (lista separada por comas):
+ *   AI_PROVIDER_ORDER   orden global
+ *   AI_ESCRITO_ORDER    orden solo para escritos
+ *   AI_CHAT_ORDER       orden solo para el chat
+ *
+ * COMPLIANCE (Ley 25.326 / secreto profesional): los escritos contienen datos
+ * personales y confidenciales de las partes. Conviene priorizar para escritos un
+ * proveedor cuyos términos NO usen los datos para entrenar modelos. Verificar las
+ * políticas de cada proveedor antes de procesar datos reales de clientes.
  */
 
 type Provider = "groq" | "gemini" | "anthropic" | "demo";
+
+const ALL_PROVIDERS: Provider[] = ["groq", "gemini", "anthropic"];
 
 interface GenerateResult {
   content: string;
   provider: Provider;
 }
 
-function availableProviders(): Provider[] {
-  const providers: Provider[] = [];
-  if (process.env.GROQ_API_KEY) providers.push("groq");
-  if (process.env.GOOGLE_AI_API_KEY) providers.push("gemini");
-  if (process.env.ANTHROPIC_API_KEY) providers.push("anthropic");
-  return providers;
+function providerHasKey(p: Provider): boolean {
+  if (p === "groq") return Boolean(process.env.GROQ_API_KEY);
+  if (p === "gemini") return Boolean(process.env.GOOGLE_AI_API_KEY);
+  if (p === "anthropic") return Boolean(process.env.ANTHROPIC_API_KEY);
+  return false;
+}
+
+function parseOrder(value: string | undefined): Provider[] | null {
+  if (!value) return null;
+  const parsed = value
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter((s): s is Provider => (ALL_PROVIDERS as string[]).includes(s));
+  return parsed.length ? parsed : null;
+}
+
+function availableProviders(kind: "escrito" | "chat"): Provider[] {
+  const escritoDefault: Provider[] = ["anthropic", "groq", "gemini"];
+  const chatDefault: Provider[] = ["groq", "gemini", "anthropic"];
+  const specific = kind === "escrito"
+    ? parseOrder(process.env.AI_ESCRITO_ORDER)
+    : parseOrder(process.env.AI_CHAT_ORDER);
+  const order =
+    specific ??
+    parseOrder(process.env.AI_PROVIDER_ORDER) ??
+    (kind === "escrito" ? escritoDefault : chatDefault);
+  return order.filter(providerHasKey);
 }
 
 // --- Non-streaming generation (for escritos) ---
@@ -81,7 +117,7 @@ export async function generateWithFallback(
   userMessage: string,
   options?: { temperature?: number; maxTokens?: number },
 ): Promise<GenerateResult> {
-  const providers = availableProviders();
+  const providers = availableProviders("escrito");
   const temp = options?.temperature ?? 0.3;
   const maxTok = options?.maxTokens ?? 4096;
 
@@ -113,7 +149,7 @@ export async function streamWithFallback(
   userMessage: string,
   options?: { temperature?: number; maxTokens?: number },
 ): Promise<{ stream: ReadableStream<Uint8Array>; provider: Provider; collectResponse: () => string }> {
-  const providers = availableProviders();
+  const providers = availableProviders("chat");
   const temp = options?.temperature ?? 0.5;
   const maxTok = options?.maxTokens ?? 2048;
 

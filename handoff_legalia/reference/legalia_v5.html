@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>LegalIA — Asistente IA y Escritos para abogados argentinos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --navy:#0b1e3a; --navy-2:#142847; --navy-ink:#0a1628;
+  --paper:#faf7f1; --paper-2:#f3eee1; --paper-3:#ebe3ce;
+  --ink:#1a1a1a; --ink-2:#3a3a3a; --mute:#6b6657;
+  --gold:#b8902f; --gold-2:#d4a94a; --gold-pale:#f0e4c2;
+  --red:#a8331c; --green:#2d6a3e;
+  --rule:rgba(11,30,58,0.12); --rule-soft:rgba(11,30,58,0.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.serif{font-family:'Fraunces',serif;font-weight:500;letter-spacing:-0.01em}
+.mono{font-family:'JetBrains Mono',monospace}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+/* App shell */
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+
+/* Sidebar */
+.side{background:var(--navy);color:#e8e3d5;display:flex;flex-direction:column;border-right:1px solid var(--navy-ink);position:relative;overflow:hidden}
+.side::before{content:'';position:absolute;top:0;right:0;width:1px;height:100%;background:linear-gradient(180deg,var(--gold),transparent 40%,transparent 60%,var(--gold))}
+.side-brand{padding:28px 24px 20px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.side-brand .logo{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.side-brand .mark{width:34px;height:34px;background:var(--gold);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;font-size:20px;color:var(--navy);font-style:italic}
+.side-brand h1{font-family:'Fraunces',serif;font-weight:600;font-size:22px;letter-spacing:-0.02em}
+.side-brand .tag{font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold-2);margin-top:6px;margin-left:44px}
+
+.side-user{padding:16px 24px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.avatar{width:36px;height:36px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--navy);font-weight:700;font-size:13px;flex-shrink:0}
+.side-user-info{min-width:0;flex:1}
+.side-user-info .name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side-user-info .meta{font-size:10px;color:rgba(232,227,213,0.6);letter-spacing:0.04em}
+
+.side-nav{padding:16px 12px;flex:1;overflow-y:auto}
+.nav-label{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(232,227,213,0.4);padding:14px 12px 8px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:6px;font-size:13px;color:rgba(232,227,213,0.8);margin-bottom:2px;position:relative;cursor:pointer;transition:all 0.15s}
+.nav-item:hover{background:rgba(255,255,255,0.05);color:#fff}
+.nav-item.active{background:rgba(184,144,47,0.15);color:#fff}
+.nav-item.active::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:2px;background:var(--gold);border-radius:0 2px 2px 0}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:0.8}
+.nav-item .kbd{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;opacity:0.4;padding:1px 5px;border:1px solid rgba(255,255,255,0.1);border-radius:3px}
+.nav-item .dot{margin-left:auto;width:6px;height:6px;background:var(--gold);border-radius:50%}
+
+.side-foot{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.08);font-size:11px;color:rgba(232,227,213,0.5)}
+.side-foot .plan{display:flex;justify-content:space-between;margin-bottom:8px;font-size:10px;letter-spacing:0.1em;text-transform:uppercase}
+.side-foot .plan b{color:var(--gold-2)}
+.side-foot-bar{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden}
+.side-foot-bar i{display:block;height:100%;width:62%;background:var(--gold)}
+
+/* Main */
+.main{display:flex;flex-direction:column;min-width:0;position:relative;background:
+  linear-gradient(var(--paper),var(--paper)),
+  radial-gradient(circle at 90% 0%,var(--paper-2) 0%,var(--paper) 50%)}
+.main::before{content:'';position:fixed;inset:0 0 0 248px;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent 0 39px,rgba(11,30,58,0.015) 39px 40px)}
+
+.topbar{padding:18px 40px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--rule);background:rgba(250,247,241,0.8);backdrop-filter:blur(8px);position:sticky;top:0;z-index:20}
+.breadcrumb{font-size:12px;color:var(--mute);display:flex;align-items:center;gap:8px}
+.breadcrumb .sep{opacity:0.4}
+.breadcrumb .current{color:var(--ink);font-weight:500}
+.topbar-actions{display:flex;align-items:center;gap:10px}
+.search-box{display:flex;align-items:center;gap:10px;padding:8px 14px;background:#fff;border:1px solid var(--rule);border-radius:8px;min-width:320px;font-size:13px;color:var(--mute);cursor:pointer;transition:border-color 0.15s}
+.search-box:hover{border-color:var(--gold)}
+.search-box .kbd{margin-left:auto;font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 6px;background:var(--paper-2);border-radius:3px;color:var(--mute)}
+.icon-btn{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid var(--rule);background:#fff;color:var(--ink-2);transition:all 0.15s}
+.icon-btn:hover{border-color:var(--gold);color:var(--navy)}
+
+/* Content */
+.content{flex:1;padding:32px 40px 60px;position:relative;z-index:1}
+
+/* Masthead */
+.masthead{display:grid;grid-template-columns:1.6fr 1fr;gap:40px;margin-bottom:40px;padding-bottom:32px;border-bottom:3px double var(--navy)}
+.masthead-meta{display:flex;justify-content:space-between;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--mute);margin-bottom:16px}
+.masthead-meta span b{color:var(--navy);font-weight:600}
+.masthead h1{font-family:'Fraunces',serif;font-weight:600;font-size:56px;line-height:0.98;letter-spacing:-0.035em;color:var(--navy);margin-bottom:12px}
+.masthead h1 em{font-style:italic;color:var(--gold)}
+.masthead p{font-size:15px;color:var(--ink-2);line-height:1.6;max-width:560px}
+.masthead-aside{padding:20px;background:linear-gradient(180deg,var(--paper-2),var(--paper-3));border:1px solid var(--rule);border-radius:4px;position:relative}
+.masthead-aside::before{content:'';position:absolute;top:-1px;left:-1px;right:-1px;height:3px;background:var(--gold)}
+.masthead-aside h3{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--navy);font-weight:700;margin-bottom:12px}
+.masthead-quick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.qa{padding:10px;background:#fff;border:1px solid var(--rule);border-radius:4px;font-size:11px;display:flex;flex-direction:column;gap:4px;transition:all 0.15s;cursor:pointer}
+.qa:hover{border-color:var(--gold);background:var(--paper)}
+.qa b{font-size:11px;color:var(--navy);font-weight:600}
+.qa span{font-size:10px;color:var(--mute)}
+
+/* Stats row */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:40px;border-top:1px solid var(--navy);border-bottom:1px solid var(--navy)}
+.stat{padding:20px 24px;border-right:1px solid var(--rule);position:relative}
+.stat:last-child{border-right:none}
+.stat-label{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--mute);margin-bottom:8px}
+.stat-value{font-family:'Fraunces',serif;font-size:38px;font-weight:600;color:var(--navy);letter-spacing:-0.03em;line-height:1}
+.stat-value sup{font-size:14px;color:var(--mute);font-weight:500;margin-left:4px}
+.stat-trend{font-size:11px;margin-top:8px;display:flex;align-items:center;gap:4px;color:var(--green);font-weight:500}
+.stat-trend.warn{color:var(--gold)}
+.stat-bar{margin-top:10px;height:3px;background:var(--rule-soft);border-radius:2px;overflow:hidden}
+.stat-bar i{display:block;height:100%;background:var(--gold)}
+
+/* Two-col */
+.two-col{display:grid;grid-template-columns:1.4fr 1fr;gap:32px}
+
+/* Card */
+.card{background:#fff;border:1px solid var(--rule);border-radius:4px;overflow:hidden;margin-bottom:24px;box-shadow:0 1px 0 rgba(11,30,58,0.04)}
+.card-head{padding:18px 24px;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,#fff,var(--paper))}
+.card-head h3{font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--navy);letter-spacing:-0.02em;display:flex;align-items:center;gap:10px}
+.card-head h3 .num{font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--navy);color:var(--gold-2);padding:3px 7px;border-radius:3px;letter-spacing:0.1em;font-weight:400;text-transform:uppercase}
+.card-head .link{font-size:12px;color:var(--navy);border-bottom:1px solid var(--gold);padding-bottom:1px}
+.card-body{padding:20px 24px}
+
+/* Chat card */
+.chat-card{background:#fff;border:1px solid var(--rule);border-radius:4px;display:flex;flex-direction:column;min-height:540px;overflow:hidden}
+.chat-head{padding:16px 20px;background:linear-gradient(180deg,var(--navy),var(--navy-2));color:#fff;display:flex;align-items:center;gap:12px}
+.chat-head-icon{width:36px;height:36px;background:var(--gold);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--navy);font-weight:700;font-size:16px;font-family:'Fraunces',serif;font-style:italic}
+.chat-head h3{font-family:'Fraunces',serif;font-size:18px;font-weight:600;letter-spacing:-0.01em}
+.chat-head p{font-size:11px;color:var(--gold-2);letter-spacing:0.04em}
+.chat-head-status{margin-left:auto;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.7);display:flex;align-items:center;gap:6px}
+.chat-head-status::before{content:'';width:6px;height:6px;background:#5ccf70;border-radius:50%;box-shadow:0 0 6px #5ccf70}
+
+.chat-body{flex:1;padding:24px;overflow-y:auto;background:
+  linear-gradient(var(--paper),var(--paper))}
+.msg{display:flex;gap:10px;margin-bottom:20px;max-width:88%}
+.msg.user{margin-left:auto;flex-direction:row-reverse}
+.msg-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.msg.ai .msg-avatar{background:var(--navy);color:var(--gold);font-family:'Fraunces',serif;font-style:italic;font-size:16px}
+.msg.user .msg-avatar{background:var(--paper-3);color:var(--navy)}
+.msg-bubble{background:#fff;border:1px solid var(--rule);border-radius:4px;padding:14px 16px;font-size:13px;line-height:1.6;color:var(--ink);position:relative}
+.msg.user .msg-bubble{background:var(--navy);color:#fff;border-color:var(--navy)}
+.msg-bubble .cite{display:inline-block;background:var(--gold-pale);color:var(--navy);padding:1px 7px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;margin:0 2px;border:1px solid var(--gold)}
+.msg-sources{margin-top:10px;padding-top:10px;border-top:1px dashed var(--rule);font-size:11px;color:var(--mute)}
+.msg-sources b{color:var(--navy);font-weight:600;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;display:block;margin-bottom:6px}
+.msg-source{display:flex;align-items:start;gap:8px;padding:6px 0}
+.msg-source .src-badge{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold);background:var(--navy);padding:1px 6px;border-radius:3px;flex-shrink:0}
+.msg-source .src-text{font-size:11px;line-height:1.5;color:var(--ink-2)}
+.msg-feedback{margin-top:10px;padding-top:8px;border-top:1px dashed var(--rule);display:flex;align-items:center;gap:6px;font-size:10px;color:var(--mute);letter-spacing:0.04em}
+.msg-feedback button{padding:3px 7px;border:1px solid var(--rule);border-radius:3px;font-size:11px;color:var(--mute);transition:all 0.15s;background:transparent}
+.msg-feedback button:hover{border-color:var(--gold);color:var(--navy)}
+
+.chat-input{padding:16px 20px;background:#fff;border-top:1px solid var(--rule)}
+.chat-suggest{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.suggest-chip{padding:4px 10px;background:var(--paper);border:1px solid var(--rule);border-radius:20px;font-size:11px;color:var(--navy);cursor:pointer;transition:all 0.15s}
+.suggest-chip:hover{background:var(--gold-pale);border-color:var(--gold)}
+.chat-input-box{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--paper);border:1px solid var(--rule);border-radius:6px;transition:border-color 0.15s}
+.chat-input-box:focus-within{border-color:var(--gold);background:#fff}
+.chat-input-box input{flex:1;border:none;outline:none;background:transparent;font-family:inherit;font-size:13px;color:var(--ink)}
+.chat-input-box input::placeholder{color:var(--mute)}
+.chat-input-send{width:34px;height:34px;background:var(--navy);color:var(--gold);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.chat-disclaimer{margin-top:8px;font-size:10px;color:var(--mute);text-align:center;font-style:italic}
+
+/* Templates panel */
+.templates{margin-bottom:24px}
+.tpl{display:grid;grid-template-columns:auto 1fr auto;gap:14px;padding:14px 0;border-bottom:1px solid var(--rule-soft);align-items:center;cursor:pointer;transition:all 0.15s}
+.tpl:last-child{border-bottom:none}
+.tpl:hover{padding-left:6px}
+.tpl-num{font-family:'Fraunces',serif;font-size:18px;color:var(--gold);font-weight:600;font-style:italic;width:32px;text-align:center}
+.tpl-main h4{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:3px;letter-spacing:-0.005em}
+.tpl-main p{font-size:11px;color:var(--mute);line-height:1.5}
+.tpl-meta{font-size:10px;color:var(--mute);letter-spacing:0.08em;text-transform:uppercase;text-align:right}
+.tpl-meta b{color:var(--navy);font-weight:600;display:block;font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:2px}
+.tpl-arrow{color:var(--mute);font-size:16px}
+
+/* Calc widget */
+.calc-widget{padding:18px;background:linear-gradient(135deg,var(--navy),var(--navy-2));color:#fff;border-radius:4px;margin-bottom:20px;position:relative;overflow:hidden}
+.calc-widget::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;border:1px solid var(--gold);border-radius:50%;opacity:0.2}
+.calc-widget::after{content:'';position:absolute;top:-60px;right:-60px;width:180px;height:180px;border:1px solid var(--gold);border-radius:50%;opacity:0.1}
+.calc-label{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-2);margin-bottom:6px}
+.calc-widget h4{font-family:'Fraunces',serif;font-size:22px;font-weight:600;margin-bottom:4px;letter-spacing:-0.01em}
+.calc-widget p{font-size:12px;opacity:0.8;margin-bottom:14px}
+.calc-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;position:relative;z-index:2}
+.calc-field{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);border-radius:4px;padding:8px 10px}
+.calc-field label{font-size:9px;color:var(--gold-2);letter-spacing:0.1em;text-transform:uppercase;display:block;margin-bottom:2px}
+.calc-field span{font-size:13px;font-weight:600}
+.calc-result{padding:12px;background:var(--gold);color:var(--navy);border-radius:4px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2}
+.calc-result-label{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;font-weight:700}
+.calc-result-value{font-family:'Fraunces',serif;font-size:22px;font-weight:700;letter-spacing:-0.02em}
+
+/* Cases / expedientes */
+.case{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--rule-soft);align-items:center}
+.case:last-child{border-bottom:none}
+.case-expte{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--navy);background:var(--paper);padding:3px 6px;border-radius:3px;font-weight:500}
+.case-body{flex:1;min-width:0}
+.case-caratula{font-family:'Fraunces',serif;font-size:14px;color:var(--navy);font-weight:500;margin-bottom:2px;line-height:1.3}
+.case-meta{font-size:10px;color:var(--mute);letter-spacing:0.04em}
+.case-status{font-size:9px;letter-spacing:0.14em;text-transform:uppercase;padding:3px 8px;border-radius:3px;font-weight:700}
+.case-status.activo{background:#e6f0e9;color:var(--green)}
+.case-status.vto{background:#f6e6e2;color:var(--red)}
+
+/* Alert / disclaimer bar */
+.disclaimer{margin-top:32px;padding:16px 20px;background:var(--gold-pale);border:1px solid var(--gold);border-radius:4px;font-size:12px;color:var(--navy-ink);display:flex;gap:12px;line-height:1.6;position:relative}
+.disclaimer::before{content:'§';font-family:'Fraunces',serif;font-size:28px;color:var(--gold);line-height:1;font-weight:700}
+.disclaimer b{color:var(--navy);font-weight:700}
+
+/* Footer */
+.foot{padding:24px 40px;border-top:1px solid var(--rule);font-size:11px;color:var(--mute);display:flex;justify-content:space-between;letter-spacing:0.04em}
+.foot b{color:var(--navy);font-weight:600}
+
+/* Scrollbar */
+.chat-body::-webkit-scrollbar{width:6px}
+.chat-body::-webkit-scrollbar-thumb{background:var(--rule);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="side-brand">
+      <div class="logo">
+        <div class="mark">L</div>
+        <h1>LegalIA</h1>
+      </div>
+      <div class="tag">§ Derecho · AR</div>
+    </div>
+
+    <div class="side-user">
+      <div class="avatar">MS</div>
+      <div class="side-user-info">
+        <div class="name">Dra. María Salerno</div>
+        <div class="meta mono">CPACF · T° 143 F° 821</div>
+      </div>
+    </div>
+
+    <nav class="side-nav">
+      <div class="nav-label">Workspace</div>
+      <div class="nav-item active">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Escritos
+        <span class="kbd">⌘E</span>
+      </div>
+      <div class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Asistente IA
+        <span class="dot"></span>
+      </div>
+      <div class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Casos
+        <span class="kbd">4</span>
+      </div>
+      <div class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 4v16"/></svg>
+        Calculadoras
+      </div>
+
+      <div class="nav-label">Biblioteca</div>
+      <div class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+        Jurisprudencia
+      </div>
+      <div class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        Códigos
+      </div>
+      <div class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        Búsqueda semántica
+      </div>
+
+      <div class="nav-label">Cuenta</div>
+      <div class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Configuración
+      </div>
+    </nav>
+
+    <div class="side-foot">
+      <div class="plan"><span>Plan Profesional</span><b>62% · abr</b></div>
+      <div class="side-foot-bar"><i></i></div>
+      <div style="margin-top:10px;font-size:10px;opacity:0.6">18/30 escritos · consultas ilim.</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <div class="topbar">
+      <div class="breadcrumb">
+        <span>Workspace</span>
+        <span class="sep">/</span>
+        <span class="current">Dashboard</span>
+      </div>
+      <div class="topbar-actions">
+        <div class="search-box">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Buscar en leyes, jurisprudencia, expedientes…
+          <span class="kbd">⌘K</span>
+        </div>
+        <button class="icon-btn" title="Notificaciones">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- MASTHEAD -->
+      <section class="masthead">
+        <div>
+          <div class="masthead-meta">
+            <span>BUENOS AIRES · AR</span>
+            <span>JUEVES <b>16 DE ABRIL</b> DE 2026</span>
+            <span>AÑO II · ED. Nº 48</span>
+          </div>
+          <h1>Buenos días,<br/><em>Dra. Salerno.</em></h1>
+          <p>Hoy tenés <b>3 escritos en borrador</b> y <b>1 vencimiento procesal</b> dentro de las próximas 72hs. El asistente IA está disponible con el corpus actualizado al 02/04/2026.</p>
+        </div>
+        <aside class="masthead-aside">
+          <h3>◆ Acceso rápido</h3>
+          <div class="masthead-quick">
+            <div class="qa">
+              <b>Nuevo escrito</b>
+              <span>Demanda, CD, contestación</span>
+            </div>
+            <div class="qa">
+              <b>Consultar IA</b>
+              <span>Derecho AR con citas</span>
+            </div>
+            <div class="qa">
+              <b>Indemn. art. 245</b>
+              <span>Calculadora LCT</span>
+            </div>
+            <div class="qa">
+              <b>Nuevo caso</b>
+              <span>Alta de expediente</span>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--mute);border-top:1px solid var(--rule);padding-top:10px;letter-spacing:0.04em">
+            Último escrito: <b style="color:var(--navy);font-weight:600">CD despido indirecto · hace 2h</b>
+          </div>
+        </aside>
+      </section>
+
+      <!-- STATS -->
+      <section class="stats">
+        <div class="stat">
+          <div class="stat-label">Escritos / abril</div>
+          <div class="stat-value">18<sup>/30</sup></div>
+          <div class="stat-bar"><i style="width:60%"></i></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Consultas IA</div>
+          <div class="stat-value">142</div>
+          <div class="stat-trend">↑ 23% vs. marzo</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Casos activos</div>
+          <div class="stat-value">7</div>
+          <div class="stat-trend warn">◆ 1 con vto. procesal</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Tiempo ahorrado · est.</div>
+          <div class="stat-value">38<sup>hs</sup></div>
+          <div class="stat-trend">en abril</div>
+        </div>
+      </section>
+
+      <!-- TWO COL -->
+      <div class="two-col">
+
+        <!-- Left: Chat + Cases -->
+        <div>
+          <!-- Chat -->
+          <div class="chat-card">
+            <div class="chat-head">
+              <div class="chat-head-icon">§</div>
+              <div>
+                <h3>Asistente IA Jurídico</h3>
+                <p>Derecho argentino · con citas verificadas de LCT, CCCN, CPCCN</p>
+              </div>
+              <div class="chat-head-status">Online · Haiku 4.5</div>
+            </div>
+
+            <div class="chat-body">
+              <div class="msg user">
+                <div class="msg-avatar">MS</div>
+                <div class="msg-bubble">¿Cuál es el plazo para reclamar la indemnización por despido sin causa y qué multas aplican si el empleador no abona en tiempo?</div>
+              </div>
+
+              <div class="msg ai">
+                <div class="msg-avatar">§</div>
+                <div class="msg-bubble">
+                  El plazo de prescripción para reclamar créditos laborales es de <b>dos (2) años</b> desde que se devengó la obligación, conforme el <span class="cite">art. 256 LCT</span>.
+                  <br/><br/>
+                  En cuanto a las multas aplicables si el empleador no abona la liquidación final:
+                  <br/>
+                  • <b>Art. 2° Ley 25.323</b> — incremento del 50% sobre las indemnizaciones del art. 245 LCT si el trabajador debió reclamar judicialmente.
+                  <br/>
+                  • <span class="cite">Art. 80 LCT</span> — multa equivalente a tres (3) sueldos si no se entregan los certificados dentro de los 30 días hábiles de intimado.
+                  <br/><br/>
+                  Importante: el plazo corre desde la intimación fehaciente. Se recomienda <b>intimar por CD dentro del plazo del art. 11 de la Ley 24.013</b> si corresponde encuadre previo.
+
+                  <div class="msg-sources">
+                    <b>◆ Fuentes citadas · 3</b>
+                    <div class="msg-source">
+                      <span class="src-badge">LCT.256</span>
+                      <span class="src-text">Ley de Contrato de Trabajo 20.744 · Prescripción de acciones — corroborado contra texto vigente.</span>
+                    </div>
+                    <div class="msg-source">
+                      <span class="src-badge">L25323</span>
+                      <span class="src-text">Ley 25.323 · Incremento indemnizatorio por falta de pago en tiempo y forma.</span>
+                    </div>
+                    <div class="msg-source">
+                      <span class="src-badge">LCT.80</span>
+                      <span class="src-text">Art. 80 LCT · Obligación de entregar certificados — ref. Plenario CNAT "Ramírez".</span>
+                    </div>
+                  </div>
+
+                  <div class="msg-feedback">
+                    ¿Fue útil?
+                    <button>👍 Sí</button>
+                    <button>👎 No</button>
+                    <button style="margin-left:auto">◆ Generar escrito con esto</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chat-input">
+              <div class="chat-suggest">
+                <span class="suggest-chip">¿Qué dice el art. 245 LCT?</span>
+                <span class="suggest-chip">Plazos CPCCN apelación</span>
+                <span class="suggest-chip">Multa art. 80</span>
+                <span class="suggest-chip">Tasa activa BNA actual</span>
+              </div>
+              <div class="chat-input-box">
+                <input type="text" placeholder="Consultá sobre legislación, jurisprudencia o procesal argentino…"/>
+                <button class="chat-input-send">↑</button>
+              </div>
+              <div class="chat-disclaimer">LegalIA es herramienta de asistencia. El abogado es responsable de revisar antes de presentar.</div>
+            </div>
+          </div>
+
+          <!-- Cases -->
+          <div class="card" style="margin-top:24px">
+            <div class="card-head">
+              <h3>Mis casos <span class="num">07 activos</span></h3>
+              <a href="#" class="link">Ver todos los expedientes →</a>
+            </div>
+            <div class="card-body" style="padding:8px 24px">
+              <div class="case">
+                <span class="case-expte">EXP 42.118/26</span>
+                <div class="case-body">
+                  <div class="case-caratula">Pereyra, Juan c/ ACME SRL s/ despido sin causa</div>
+                  <div class="case-meta">CNAT · Sala III · Juzgado N° 14 · 3 escritos generados</div>
+                </div>
+                <span class="case-status vto">Vto. 19/04</span>
+              </div>
+              <div class="case">
+                <span class="case-expte">EXP 38.902/26</span>
+                <div class="case-body">
+                  <div class="case-caratula">Gómez, Ana c/ Obra Social XX s/ amparo</div>
+                  <div class="case-meta">Fuero Civil · Juzgado N° 82 · 2 escritos generados</div>
+                </div>
+                <span class="case-status activo">Activo</span>
+              </div>
+              <div class="case">
+                <span class="case-expte">EXP 45.331/26</span>
+                <div class="case-body">
+                  <div class="case-caratula">Martín, Lucas c/ ART Provincia s/ accidente laboral</div>
+                  <div class="case-meta">CNAT · Sala VII · 1 escrito generado</div>
+                </div>
+                <span class="case-status activo">Activo</span>
+              </div>
+              <div class="case">
+                <span class="case-expte">EXP 51.207/25</span>
+                <div class="case-body">
+                  <div class="case-caratula">Rodríguez, C. c/ Empresa XX s/ diferencias salariales</div>
+                  <div class="case-meta">SCBA · En etapa probatoria</div>
+                </div>
+                <span class="case-status activo">Activo</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Templates + calc -->
+        <div>
+          <div class="card">
+            <div class="card-head">
+              <h3>Plantillas <span class="num">05 disponibles</span></h3>
+              <a href="#" class="link">Ver todas →</a>
+            </div>
+            <div class="card-body" style="padding:8px 24px">
+              <div class="templates">
+                <div class="tpl">
+                  <div class="tpl-num">I</div>
+                  <div class="tpl-main">
+                    <h4>Demanda laboral · despido sin causa</h4>
+                    <p>Art. 245, 232, 233 LCT · CABA y PBA</p>
+                  </div>
+                  <div class="tpl-meta">
+                    Usada<br/><b>47×</b>
+                  </div>
+                </div>
+                <div class="tpl">
+                  <div class="tpl-num">II</div>
+                  <div class="tpl-main">
+                    <h4>Carta documento · intimación de pago</h4>
+                    <p>Art. 57 LCT · modelo con plazos</p>
+                  </div>
+                  <div class="tpl-meta">
+                    Usada<br/><b>88×</b>
+                  </div>
+                </div>
+                <div class="tpl">
+                  <div class="tpl-num">III</div>
+                  <div class="tpl-main">
+                    <h4>CD · despido indirecto</h4>
+                    <p>Encuadre art. 242 LCT</p>
+                  </div>
+                  <div class="tpl-meta">
+                    Usada<br/><b>34×</b>
+                  </div>
+                </div>
+                <div class="tpl">
+                  <div class="tpl-num">IV</div>
+                  <div class="tpl-main">
+                    <h4>Contestación de demanda laboral</h4>
+                    <p>Defensas, negativa, reconvención</p>
+                  </div>
+                  <div class="tpl-meta">
+                    Usada<br/><b>19×</b>
+                  </div>
+                </div>
+                <div class="tpl">
+                  <div class="tpl-num">V</div>
+                  <div class="tpl-main">
+                    <h4>Recurso de apelación · genérico</h4>
+                    <p>CPCCN · arts. 242-253</p>
+                  </div>
+                  <div class="tpl-meta">
+                    Usada<br/><b>12×</b>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calculadora widget -->
+          <div class="calc-widget">
+            <div class="calc-label">◆ Calculadora · art. 245 LCT</div>
+            <h4>Indemnización por despido</h4>
+            <p>Último cálculo del caso <span class="mono" style="font-size:11px">EXP 42.118/26</span></p>
+            <div class="calc-fields">
+              <div class="calc-fields" style="grid-column:1/-1;display:contents">
+                <div class="calc-field">
+                  <label>Mejor remuneración</label>
+                  <span>$ 1.240.000</span>
+                </div>
+                <div class="calc-field">
+                  <label>Antigüedad</label>
+                  <span>4 años 7 meses</span>
+                </div>
+                <div class="calc-field">
+                  <label>Preaviso · art. 232</label>
+                  <span>$ 2.480.000</span>
+                </div>
+                <div class="calc-field">
+                  <label>Integración mes · art. 233</label>
+                  <span>$ 413.333</span>
+                </div>
+              </div>
+            </div>
+            <div class="calc-result">
+              <span class="calc-result-label">Total estimado</span>
+              <span class="calc-result-value">$ 9.933.333</span>
+            </div>
+          </div>
+
+          <!-- Activity feed -->
+          <div class="card">
+            <div class="card-head">
+              <h3>Actividad</h3>
+              <a href="#" class="link">Historial →</a>
+            </div>
+            <div class="card-body" style="padding:0">
+              <div style="padding:12px 24px;border-bottom:1px solid var(--rule-soft);display:flex;gap:10px;align-items:start;font-size:12px">
+                <div class="mono" style="color:var(--gold);font-size:10px;letter-spacing:0.1em;margin-top:2px">10:47</div>
+                <div>Generaste <b style="color:var(--navy)">CD despido indirecto</b> para caso <span class="mono" style="font-size:11px;color:var(--navy)">EXP 45.331/26</span></div>
+              </div>
+              <div style="padding:12px 24px;border-bottom:1px solid var(--rule-soft);display:flex;gap:10px;align-items:start;font-size:12px">
+                <div class="mono" style="color:var(--gold);font-size:10px;letter-spacing:0.1em;margin-top:2px">09:22</div>
+                <div>Consulta IA · <b style="color:var(--navy)">multa art. 80 LCT</b> · 3 fuentes citadas</div>
+              </div>
+              <div style="padding:12px 24px;display:flex;gap:10px;align-items:start;font-size:12px">
+                <div class="mono" style="color:var(--gold);font-size:10px;letter-spacing:0.1em;margin-top:2px">AYER</div>
+                <div>Alta de caso <b style="color:var(--navy)">EXP 45.331/26</b> — Martín, L. c/ ART Provincia</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="disclaimer">
+        <div>
+          <b>Advertencia profesional —</b> LegalIA es una herramienta de asistencia. Todo escrito y consulta debe ser revisada por el profesional antes de su presentación. No reemplaza el criterio jurídico ni la verificación de vigencia normativa. Corpus actualizado al 02/04/2026.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="foot">
+      <div><b>LegalIA</b> v2.4.1 · Desarrollo sin Fronteras · 2026</div>
+      <div>Corpus legal: <b>LCT · CCCN · CPCCN · Fallos CSJN/CNAT/SCBA</b></div>
+    </div>
+
+  </main>
+</div>
+
+</body>
+</html>

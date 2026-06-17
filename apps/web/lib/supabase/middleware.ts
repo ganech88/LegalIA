@@ -34,8 +34,14 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/register");
   const isOnboarding = request.nextUrl.pathname.startsWith("/onboarding");
   const isCallback = request.nextUrl.pathname.startsWith("/auth/callback");
+  const path = request.nextUrl.pathname;
   const isPublic =
-    request.nextUrl.pathname === "/" || request.nextUrl.pathname.startsWith("/api/webhooks");
+    path === "/" ||
+    path === "/terminos" ||
+    path === "/privacidad" ||
+    path.startsWith("/api/webhooks") ||
+    path.startsWith("/api/billing/webhook") || // webhook server-to-server (sin sesión)
+    path.startsWith("/api/cron/"); // cron jobs (autorizados por CRON_SECRET)
 
   if (isCallback || isPublic) {
     return supabaseResponse;

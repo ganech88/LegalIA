@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Handoff LegalIA — Índice</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Newsreader:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+  :root{
+    --navy:#1a2332; --navy2:#242d3d; --gold:#b8944a; --gold-pale:#f0e6cc;
+    --paper:#f5f1e8; --paper2:#ede6d3; --ink:#2a2f3a; --ink2:#4a5268; --mute:#8b8878;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#fafaf7 repeating-linear-gradient(to bottom,transparent 0,transparent 31px,rgba(26,35,50,.04) 31px,rgba(26,35,50,.04) 32px);color:var(--ink);font:14px/1.55 'IBM Plex Sans',system-ui,sans-serif}
+  .wrap{max-width:960px;margin:0 auto;padding:56px 40px 80px}
+  .meta{font:500 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--mute);display:flex;gap:14px;margin-bottom:18px}
+  .meta span+span::before{content:"·";margin-right:14px;opacity:.5}
+  h1{font:600 clamp(2.5rem,5vw,4rem)/1.02 'Fraunces',serif;letter-spacing:-.03em;color:var(--navy);margin:0 0 12px}
+  h1 em{font-style:italic;color:var(--gold);font-weight:600}
+  .lead{font:400 17px/1.55 'Newsreader',serif;color:var(--ink2);max-width:680px;margin:0 0 36px}
+  .rule{height:3px;background:linear-gradient(to right,var(--navy) 0 100%),linear-gradient(to right,var(--navy) 0 100%);border-top:1px solid var(--navy);border-bottom:1px solid var(--navy);margin:28px 0 40px;position:relative}
+  .rule::before,.rule::after{content:"";position:absolute;left:0;right:0;height:1px;background:var(--navy)}
+  .rule::before{top:0}.rule::after{bottom:0}
+  .section-title{font:600 12px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0 0 14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid rgba(26,35,50,.12);border-radius:6px;background:#fff;overflow:hidden;margin-bottom:40px}
+  .card{padding:20px 22px;border-right:1px solid rgba(26,35,50,.08);border-bottom:1px solid rgba(26,35,50,.08);position:relative;text-decoration:none;color:inherit;transition:background .15s}
+  .card:hover{background:var(--paper)}
+  .card:nth-child(2n){border-right:none}
+  .card:nth-last-child(-n+2){border-bottom:none}
+  .num{font:italic 600 20px 'Fraunces',serif;color:var(--gold);position:absolute;top:16px;right:18px}
+  .card h3{font:600 17px/1.2 'Fraunces',serif;letter-spacing:-.01em;color:var(--navy);margin:0 0 6px;padding-right:40px}
+  .card p{font:400 12.5px/1.5 'IBM Plex Sans',sans-serif;color:var(--ink2);margin:0}
+  .card .kbd{font:500 10px 'IBM Plex Mono',monospace;color:var(--mute);letter-spacing:.1em;text-transform:uppercase;margin-top:8px;display:block}
+  .ref{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:24px 26px;border-radius:6px;margin-bottom:40px;position:relative;overflow:hidden}
+  .ref::before{content:"";position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;border:1px solid var(--gold);opacity:.2}
+  .ref .section-title{color:#c9a65e;margin-bottom:10px}
+  .ref h2{font:600 26px/1.1 'Fraunces',serif;letter-spacing:-.015em;color:#fff;margin:0 0 6px}
+  .ref p{color:rgba(255,255,255,.75);margin:0 0 14px;font:400 13px/1.5 'Newsreader',serif}
+  .ref a{display:inline-block;background:var(--gold);color:var(--navy);font:700 12px 'IBM Plex Sans',sans-serif;padding:8px 14px;border-radius:3px;text-decoration:none}
+  .ref a:hover{background:#c9a65e}
+  footer{margin-top:48px;padding-top:20px;border-top:1px solid rgba(26,35,50,.12);font:400 12px 'IBM Plex Mono',monospace;color:var(--mute);display:flex;justify-content:space-between}
+  footer em{font:italic 600 14px 'Fraunces',serif;color:var(--gold);font-style:italic}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="meta">
+    <span>HANDOFF</span><span>DESARROLLADOR</span><span>LEGALIA · ED. EDITORIAL</span>
+  </div>
+  <h1>Rediseño <em>editorial</em><br>de LegalIA.</h1>
+  <p class="lead">Paquete para el agente desarrollador. Convierte la app actual a la identidad navy + gold definida en el mockup v5. Once documentos, en orden de implementación.</p>
+
+  <div class="ref">
+    <div class="section-title">◆ Referencia visual</div>
+    <h2>Mockup v5 — legalia_v5.html</h2>
+    <p>Abrilo al lado mientras implementás. Es la fuente de verdad para pixel a pixel.</p>
+    <a href="./reference/legalia_v5.html" target="_blank">Abrir mockup →</a>
+  </div>
+
+  <div class="section-title">§ Documentos</div>
+  <div class="grid">
+    <a class="card" href="./00-README.md"><span class="num">○</span><h3>README</h3><p>Cómo usar el handoff + índice + resumen del cambio.</p><span class="kbd">00-README.md</span></a>
+    <a class="card" href="./01-TOKENS.md"><span class="num">I</span><h3>Design Tokens</h3><p>Paleta navy/gold, utilidades editoriales, shadows sobrios.</p><span class="kbd">01-TOKENS.md · globals.css</span></a>
+    <a class="card" href="./02-TYPOGRAPHY.md"><span class="num">II</span><h3>Typography</h3><p>Fraunces · Newsreader · IBM Plex Sans + Mono. Reglas de uso.</p><span class="kbd">02-TYPOGRAPHY.md · layout.tsx</span></a>
+    <a class="card" href="./03-SIDEBAR.md"><span class="num">III</span><h3>Sidebar</h3><p>Navy con numerales romanos, plan card, drawer móvil.</p><span class="kbd">03-SIDEBAR.md</span></a>
+    <a class="card" href="./04-DASHBOARD.md"><span class="num">IV</span><h3>Dashboard</h3><p>Masthead + stats deck + tabla escritos + casos activos.</p><span class="kbd">04-DASHBOARD.md</span></a>
+    <a class="card" href="./05-CHAT.md"><span class="num">V</span><h3>Asistente IA</h3><p>Chat con citas editoriales y aparato crítico.</p><span class="kbd">05-CHAT.md</span></a>
+    <a class="card" href="./06-ESCRITOS.md"><span class="num">VI</span><h3>Escritos</h3><p>Listado + editor con preview A4 procesal.</p><span class="kbd">06-ESCRITOS.md</span></a>
+    <a class="card" href="./07-CASOS.md"><span class="num">VII</span><h3>Casos</h3><p>Listado tipo expediente + detalle con timeline.</p><span class="kbd">07-CASOS.md</span></a>
+    <a class="card" href="./08-CALCULADORAS.md"><span class="num">VIII</span><h3>Calculadoras</h3><p>Art. 245, ART, intereses, IPC — con widget en dashboard.</p><span class="kbd">08-CALCULADORAS.md</span></a>
+    <a class="card" href="./09-LANDING-AUTH.md"><span class="num">IX</span><h3>Landing + Auth</h3><p>Landing pública, login split, register, onboarding wizard.</p><span class="kbd">09-LANDING-AUTH.md</span></a>
+    <a class="card" href="./10-RESPONSIVE.md"><span class="num">X</span><h3>Responsive</h3><p>Breakpoints, drawer móvil, print A4, viewports de test.</p><span class="kbd">10-RESPONSIVE.md</span></a>
+    <a class="card" href="./11-MIGRATION.md"><span class="num">XI</span><h3>Migration</h3><p>Estrategia de branches, orden de rollout, gotchas conocidos.</p><span class="kbd">11-MIGRATION.md</span></a>
+  </div>
+
+  <footer>
+    <span>DESARROLLO SIN FRONTERAS · 2026</span>
+    <em>§ Éxitos</em>
+  </footer>
+</div>
+</body>
+</html>

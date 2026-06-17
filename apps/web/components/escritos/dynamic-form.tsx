@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,27 @@ export function DynamicForm({ template }: DynamicFormProps) {
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [prefilled, setPrefilled] = useState(false);
   const router = useRouter();
+
+  // Prellenado desde la calculadora (sessionStorage): solo campos de este template.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("legalia:prefill");
+      if (!raw) return;
+      const data = JSON.parse(raw) as Record<string, unknown>;
+      const fieldNames = new Set((template.campos_requeridos.fields as FormField[]).map((f) => f.name));
+      const seed: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(data)) {
+        if (fieldNames.has(k)) seed[k] = v;
+      }
+      if (Object.keys(seed).length > 0) {
+        setValues((prev) => ({ ...seed, ...prev }));
+        setPrefilled(true);
+      }
+      sessionStorage.removeItem("legalia:prefill");
+    } catch { /* ignore */ }
+  }, [template]);
 
   function setValue(name: string, value: unknown) {
     setValues((prev) => ({ ...prev, [name]: value }));
@@ -63,6 +83,12 @@ export function DynamicForm({ template }: DynamicFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</div>
+      )}
+
+      {prefilled && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+          Se prellenaron fechas, remuneración y liquidación desde la calculadora. Revisá y completá el resto de los datos.
+        </div>
       )}
 
       {fields.map((field) => (

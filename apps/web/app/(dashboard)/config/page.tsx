@@ -25,8 +25,32 @@ export default function ConfigPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [ciclo, setCiclo] = useState<"mensual" | "anual">("mensual");
   const router = useRouter();
   const supabase = createClient();
+
+  async function handleUpgrade(targetPlan: "profesional" | "estudio") {
+    setUpgrading(targetPlan);
+    setError(null);
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: targetPlan, ciclo }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "No se pudo iniciar el pago.");
+        setUpgrading(null);
+        return;
+      }
+      window.location.href = data.init_point;
+    } catch {
+      setError("No se pudo conectar con el servicio de pago.");
+      setUpgrading(null);
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -89,6 +113,22 @@ export default function ConfigPage() {
     router.refresh();
   }
 
+  async function handleDeleteAccount() {
+    const ok = window.confirm(
+      "¿Eliminar tu cuenta y TODOS tus datos (escritos, consultas, casos)? Esta acción es irreversible.",
+    );
+    if (!ok) return;
+    setError(null);
+    const res = await fetch("/api/account/delete", { method: "POST" });
+    if (res.ok) {
+      router.push("/");
+      router.refresh();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error || "No se pudo eliminar la cuenta.");
+    }
+  }
+
   if (loading) {
     return (
       <div className="bg-paper-rules min-h-screen flex items-center justify-center">
@@ -147,10 +187,31 @@ export default function ConfigPage() {
           </div>
           {plan === "free" && (
             <div className="rounded bg-[var(--brand-paper-2)] p-4 text-[13px] text-[var(--brand-ink-2)]">
-              <strong>Actualiza a Profesional</strong> para 30 escritos/mes, consultas ilimitadas y todas las calculadoras.
-              <button className="ml-2 rounded bg-[var(--brand-gold)] px-3 py-1 text-[12px] font-bold text-[var(--brand-navy)]">
-                Actualizar →
-              </button>
+              <strong>Actualizá tu plan</strong> para más escritos, consultas ilimitadas y funciones de estudio.
+              <div className="mt-3 inline-flex rounded border border-border bg-white p-0.5">
+                {(["mensual", "anual"] as const).map((c) => (
+                  <button key={c} onClick={() => setCiclo(c)}
+                    className={`rounded px-3 py-1 text-[11px] font-semibold ${ciclo === c ? "bg-[var(--brand-navy)] text-white" : "text-[var(--brand-ink-2)]"}`}>
+                    {c === "mensual" ? "Mensual" : "Anual · 2 meses gratis"}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleUpgrade("profesional")}
+                  disabled={upgrading !== null}
+                  className="rounded bg-[var(--brand-gold)] px-3 py-1.5 text-[12px] font-bold text-[var(--brand-navy)] disabled:opacity-60"
+                >
+                  {upgrading === "profesional" ? "Redirigiendo…" : ciclo === "anual" ? "Profesional · $120.000/año →" : "Profesional · $12.000/mes →"}
+                </button>
+                <button
+                  onClick={() => handleUpgrade("estudio")}
+                  disabled={upgrading !== null}
+                  className="rounded border border-[var(--brand-navy)] px-3 py-1.5 text-[12px] font-bold text-[var(--brand-navy)] hover:bg-[var(--brand-paper)] disabled:opacity-60"
+                >
+                  {upgrading === "estudio" ? "Redirigiendo…" : ciclo === "anual" ? "Estudio · $250.000/año →" : "Estudio · $25.000/mes →"}
+                </button>
+              </div>
             </div>
           )}
         </section>
@@ -255,6 +316,29 @@ export default function ConfigPage() {
           >
             Cerrar sesion
           </button>
+        </div>
+
+        {/* Danger zone — derecho de supresión (Ley 25.326) */}
+        <section className="mt-10 rounded border border-[var(--brand-red)]/30 bg-[var(--brand-red)]/[0.03] p-6">
+          <div className="t-overline text-[var(--brand-red)] mb-2">ZONA DE PELIGRO</div>
+          <h3 className="font-[var(--font-display)] text-[16px] font-semibold text-[var(--brand-ink)]">
+            Eliminar cuenta y datos
+          </h3>
+          <p className="mt-1 mb-4 text-[13px] text-[var(--brand-ink-2)] max-w-[520px]">
+            Borra de forma permanente tu cuenta y todos tus datos (escritos, consultas y casos).
+            Esta acción no se puede deshacer.
+          </p>
+          <button
+            onClick={handleDeleteAccount}
+            className="rounded bg-[var(--brand-red)] px-4 py-2.5 text-[13px] font-semibold text-white hover:opacity-90"
+          >
+            Eliminar mi cuenta
+          </button>
+        </section>
+
+        <div className="mt-8 flex gap-4 text-[12px] text-[var(--brand-mute)]">
+          <a href="/terminos" className="hover:text-[var(--brand-navy)]">Términos</a>
+          <a href="/privacidad" className="hover:text-[var(--brand-navy)]">Privacidad</a>
         </div>
       </div>
     </div>

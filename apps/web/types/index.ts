@@ -74,6 +74,7 @@ export interface Caso {
   cliente_nombre: string | null;
   contraparte_nombre: string | null;
   notas: string | null;
+  organization_id?: string | null;
   created_at: string;
   updated_at: string;
 }

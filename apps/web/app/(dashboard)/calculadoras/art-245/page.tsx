@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { calcularIndemnizacionArt245, formatCurrency } from "@/lib/legal/calculadoras";
 import type { IndemnizacionResult } from "@/lib/legal/calculadoras";
 
@@ -11,7 +12,30 @@ export default function Art245Page() {
   const [fechaDespido, setFechaDespido] = useState("");
   const [topeCct, setTopeCct] = useState("");
   const [aplicaVizzoti, setAplicaVizzoti] = useState(false);
+  const [enPeriodoPrueba, setEnPeriodoPrueba] = useState(false);
+  const [ley25323art1, setLey25323art1] = useState(false);
+  const [ley25323art2, setLey25323art2] = useState(false);
+  const [multaArt80, setMultaArt80] = useState(false);
   const [result, setResult] = useState<IndemnizacionResult | null>(null);
+  const router = useRouter();
+
+  function generarDemanda() {
+    if (!result) return;
+    const rubrosTexto = result.rubros
+      .map((r) => `${r.label}: ${formatCurrency(r.monto)}`)
+      .join("; ");
+    const prefill = {
+      fecha_ingreso: fechaIngreso,
+      fecha_despido: fechaDespido,
+      mejor_remuneracion: mejorRemuneracion,
+      monto_reclamado: String(Math.round(result.total)),
+      rubros_reclamados: rubrosTexto,
+    };
+    try {
+      sessionStorage.setItem("legalia:prefill", JSON.stringify(prefill));
+    } catch { /* sessionStorage no disponible */ }
+    router.push("/escritos");
+  }
 
   function handleCalcular(e: React.FormEvent) {
     e.preventDefault();
@@ -21,6 +45,10 @@ export default function Art245Page() {
       fecha_despido: fechaDespido,
       tope_cct: topeCct ? parseFloat(topeCct) : undefined,
       aplica_vizzoti: aplicaVizzoti,
+      en_periodo_prueba: enPeriodoPrueba,
+      ley_25323_art1: ley25323art1,
+      ley_25323_art2: ley25323art2,
+      multa_art_80: multaArt80,
     });
     setResult(r);
   }
@@ -96,15 +124,14 @@ export default function Art245Page() {
               />
             </div>
 
-            <label className="flex items-center gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={aplicaVizzoti}
-                onChange={(e) => setAplicaVizzoti(e.target.checked)}
-                className="h-4 w-4 rounded border-border text-[var(--brand-gold)] focus:ring-[var(--brand-gold)]"
-              />
-              <span className="text-[13px] text-[var(--brand-ink-2)]">Aplicar doctrina Vizzoti (67% minimo)</span>
-            </label>
+            <div className="space-y-2.5 rounded border border-border bg-[var(--brand-paper,#faf7f0)]/40 p-3.5">
+              <span className="t-overline text-[var(--brand-navy)] block mb-1">Opciones de cálculo</span>
+              <Check checked={aplicaVizzoti} onChange={setAplicaVizzoti} label="Aplicar doctrina Vizzoti (67% mínimo sobre el tope)" />
+              <Check checked={enPeriodoPrueba} onChange={setEnPeriodoPrueba} label="En período de prueba (preaviso 15 días)" />
+              <Check checked={ley25323art1} onChange={setLey25323art1} label="Duplicación Ley 25.323 art. 1 (relación no registrada)" />
+              <Check checked={ley25323art2} onChange={setLey25323art2} label="Incremento Ley 25.323 art. 2 (50% por falta de pago)" />
+              <Check checked={multaArt80} onChange={setMultaArt80} label="Multa art. 80 LCT (3 remuneraciones)" />
+            </div>
 
             <button
               type="submit"
@@ -137,12 +164,9 @@ export default function Art245Page() {
 
                 <table className="w-full text-[13px]">
                   <tbody className="divide-y divide-border">
-                    <Row label="Antiguedad" sublabel={`${result.antiguedad_anios} año${result.antiguedad_anios > 1 ? "s" : ""} × ${formatCurrency(result.base_calculo)}`} value={result.indemnizacion_antiguedad} />
-                    <Row label="Preaviso" sublabel={`${result.preaviso_meses} mes${result.preaviso_meses > 1 ? "es" : ""}`} value={result.preaviso} />
-                    <Row label="Integracion mes despido" sublabel={`${result.integracion_dias} dias`} value={result.integracion} />
-                    <Row label="SAC s/preaviso e integracion" value={result.sac_preaviso} />
-                    <Row label="Vacaciones proporcionales" value={result.vacaciones_proporcionales} />
-                    <Row label="SAC proporcional" value={result.sac_proporcional} />
+                    {result.rubros.map((rubro) => (
+                      <Row key={rubro.label} label={rubro.label} sublabel={rubro.detalle} value={rubro.monto} />
+                    ))}
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 border-[var(--brand-navy)]">
@@ -155,12 +179,15 @@ export default function Art245Page() {
                 </table>
 
                 <div className="mt-6 pt-4 border-t border-border">
-                  <Link
-                    href="/escritos"
+                  <button
+                    onClick={generarDemanda}
                     className="inline-flex items-center gap-2 rounded bg-[var(--brand-gold)] px-4 py-2.5 text-[13px] font-semibold text-[var(--brand-navy)] hover:bg-[var(--brand-gold)]/80"
                   >
                     Generar demanda con estos datos →
-                  </Link>
+                  </button>
+                  <p className="mt-2 text-[11px] text-[var(--brand-mute)]">
+                    Lleva fechas, remuneración y liquidación al formulario de demanda laboral.
+                  </p>
                 </div>
               </div>
             )}
@@ -168,6 +195,20 @@ export default function Art245Page() {
         </div>
       </div>
     </div>
+  );
+}
+
+function Check({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <label className="flex items-center gap-2.5 cursor-pointer">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-4 w-4 rounded border-border text-[var(--brand-gold)] focus:ring-[var(--brand-gold)]"
+      />
+      <span className="text-[13px] text-[var(--brand-ink-2)]">{label}</span>
+    </label>
   );
 }
 

@@ -23,6 +23,12 @@ export interface Fallo {
   area: string;
   sumario: string;
   voces: string[];
+  /**
+   * true  = fallo verificado (cita confirmada), se inyecta al asistente IA.
+   * false = criterio ilustrativo cuya cita exacta NO está confirmada; se muestra
+   *         en la biblioteca con aviso pero NO se usa como "fuente verificada".
+   */
+  verificado: boolean;
 }
 
 export const LEYES: Ley[] = [
@@ -40,6 +46,13 @@ export const LEYES: Ley[] = [
       { numero: "21", titulo: "Contrato de trabajo", texto: "Habra contrato de trabajo, cualquiera sea su forma o denominacion, siempre que una persona fisica se obligue a realizar actos, ejecutar obras o prestar servicios en favor de la otra y bajo la dependencia de esta, durante un periodo determinado o indeterminado de tiempo, mediante el pago de una remuneracion." },
       { numero: "23", titulo: "Presuncion de existencia del contrato", texto: "El hecho de la prestacion de servicios hace presumir la existencia de un contrato de trabajo, salvo que por las circunstancias, las relaciones o causas que lo motiven se demostrase lo contrario." },
       { numero: "80", titulo: "Deber de observar obligaciones", texto: "La obligacion de ingresar los fondos de seguridad social por parte del empleador y los sindicales a su cargo, ya sea como obligado directo o como agente de retencion, configurara asimismo una obligacion contractual. El empleador debera entregar al trabajador al momento de la extincion, certificado de trabajo conteniendo las indicaciones del articulo 80." },
+      { numero: "9", titulo: "Principio in dubio pro operario", texto: "En caso de duda sobre la aplicacion de normas legales o convencionales prevalecera la mas favorable al trabajador. Si la duda recayese en la interpretacion o alcance de la ley, o en la apreciacion de la prueba, los jueces se decidiran en el sentido mas favorable al trabajador." },
+      { numero: "66", titulo: "Ius variandi", texto: "El empleador esta facultado para introducir cambios relativos a la forma y modalidades de la prestacion del trabajo, en tanto no importen un ejercicio irrazonable de esa facultad, ni alteren modalidades esenciales del contrato, ni causen perjuicio material ni moral al trabajador. Ante su ejercicio abusivo el trabajador podra considerarse despedido sin justa causa o accionar para restablecer las condiciones alteradas." },
+      { numero: "92 bis", titulo: "Periodo de prueba", texto: "El contrato de trabajo por tiempo indeterminado se entiende celebrado a prueba durante los primeros tres (3) meses. Cualquiera de las partes podra extinguir la relacion durante ese lapso sin expresion de causa y sin derecho a indemnizacion por antiguedad, con obligacion de preavisar." },
+      { numero: "178", titulo: "Presuncion de despido por maternidad", texto: "Se presume, salvo prueba en contrario, que el despido de la mujer trabajadora obedece a razones de maternidad o embarazo cuando se dispusiera dentro del plazo de siete meses y medio anteriores o posteriores a la fecha del parto, siempre que la mujer haya cumplido con la notificacion del embarazo. En tal caso procede la indemnizacion agravada del art. 182." },
+      { numero: "182", titulo: "Indemnizacion por maternidad/matrimonio", texto: "En caso de despido por causa de embarazo o maternidad, el empleador abonara una indemnizacion equivalente a un (1) ano de remuneraciones, que se acumula a la establecida en el art. 245." },
+      { numero: "242", titulo: "Justa causa de despido", texto: "Una de las partes podra hacer denuncia del contrato de trabajo en caso de inobservancia por la otra de las obligaciones resultantes del mismo que configuren injuria y que, por su gravedad, no consientan la prosecucion de la relacion. La valoracion debera ser hecha prudencialmente por los jueces, segun las modalidades y circunstancias de cada caso." },
+      { numero: "243", titulo: "Comunicacion e invariabilidad de la causa", texto: "El despido por justa causa dispuesto por el empleador, como la denuncia del contrato fundada en justa causa por el trabajador, deberan comunicarse por escrito con expresion suficientemente clara de los motivos en que se funda la ruptura. Ante la demanda no se admitira la modificacion de la causal de despido consignada en la comunicacion." },
       { numero: "231", titulo: "Plazos de preaviso", texto: "El contrato de trabajo no podra ser disuelto por voluntad de una de las partes, sin previo aviso, o en su defecto, indemnizacion ademas de la que corresponda al trabajador por su antiguedad en el empleo, cuando el contrato se disuelva por voluntad del empleador. El preaviso debera darse con la anticipacion siguiente: a) por el trabajador, de quince (15) dias; b) por el empleador, de quince (15) dias cuando el trabajador se encontrare en periodo de prueba; de un (1) mes cuando el trabajador tuviese una antiguedad en el empleo que no exceda de cinco (5) anos y de dos (2) meses cuando fuere superior." },
       { numero: "232", titulo: "Indemnizacion sustitutiva del preaviso", texto: "La parte que omita el preaviso o lo otorgue de modo insuficiente debera abonar a la otra una indemnizacion sustitutiva equivalente a la remuneracion que corresponderia al trabajador durante los plazos senalados en el articulo 231." },
       { numero: "233", titulo: "Integracion del mes de despido", texto: "Cuando la extincion del contrato de trabajo dispuesta por el empleador se produzca sin preaviso y en fecha que no coincida con el ultimo dia del mes, la indemnizacion sustitutiva debida al trabajador se integrara con una suma igual a los salarios por los dias faltantes hasta el ultimo dia del mes en el que se produjera el despido." },
@@ -62,7 +75,9 @@ export const LEYES: Ley[] = [
       { numero: "1708", titulo: "Funciones de la responsabilidad", texto: "Las disposiciones de este Titulo son aplicables a la prevencion del dano y a su reparacion." },
       { numero: "1716", titulo: "Deber de reparar", texto: "La violacion del deber de no danar a otro, o el incumplimiento de una obligacion, da lugar a la reparacion del dano causado, conforme con las disposiciones de este Codigo." },
       { numero: "1737", titulo: "Concepto de dano", texto: "Hay dano cuando se lesiona un derecho o un interes no reprobado por el ordenamiento juridico, que tenga por objeto la persona, el patrimonio, o un derecho de incidencia colectiva." },
-      { numero: "1738", titulo: "Indemnizacion", texto: "La indemnizacion comprende la perdida o disminucion del patrimonio de la victima, el lucro cesante en el beneficio economico esperado de acuerdo a la probabilidad objetiva de su obtencion y la perdida de chances." },
+      { numero: "1738", titulo: "Indemnizacion", texto: "La indemnizacion comprende la perdida o disminucion del patrimonio de la victima, el lucro cesante en el beneficio economico esperado de acuerdo a la probabilidad objetiva de su obtencion y la perdida de chances. Incluye especialmente las consecuencias de la violacion de los derechos personalisimos de la victima, de su integridad personal, su salud psicofisica, sus afecciones espirituales legitimas y las que resultan de la interferencia en su proyecto de vida." },
+      { numero: "1746", titulo: "Indemnizacion por incapacidad (formula de renta)", texto: "En caso de lesiones o incapacidad permanente, fisica o psiquica, total o parcial, la indemnizacion debe ser evaluada mediante la determinacion de un capital de tal modo que sus rentas cubran la disminucion de la aptitud del damnificado para realizar actividades productivas o economicamente valorables, y que se agote al termino del plazo en que razonablemente pudo continuar realizando tales actividades." },
+      { numero: "1757", titulo: "Hecho de las cosas y actividades riesgosas", texto: "Toda persona responde por el dano causado por el riesgo o vicio de las cosas, o de las actividades que sean riesgosas o peligrosas por su naturaleza, por los medios empleados o por las circunstancias de su realizacion. La responsabilidad es objetiva. No son eximentes la autorizacion administrativa para el uso de la cosa o la realizacion de la actividad, ni el cumplimiento de las tecnicas de prevencion." },
       { numero: "2560", titulo: "Plazo generico de prescripcion", texto: "El plazo de la prescripcion es de cinco anos, excepto que este previsto uno diferente en la legislacion local." },
       { numero: "2562", titulo: "Plazo de prescripcion de dos anos", texto: "Prescriben a los dos anos: a) el pedido de declaracion de nulidad relativa y de revision de actos juridicos; b) el reclamo de derecho comun de danos derivados de accidentes y enfermedades del trabajo; c) el reclamo de todo lo que se devenga por anos o plazos periodicos mas cortos." },
     ],
@@ -108,6 +123,7 @@ export const JURISPRUDENCIA: Fallo[] = [
     area: "laboral",
     sumario: "La Corte Suprema declaro la inconstitucionalidad del tope del art. 245 LCT cuando la aplicacion del limite reduce la base salarial en mas del 33%. Establecio que la indemnizacion no puede ser inferior al 67% de la mejor remuneracion mensual normal y habitual del trabajador.",
     voces: ["indemnizacion", "tope", "inconstitucionalidad", "art. 245", "despido"],
+    verificado: true,
   },
   {
     id: "aquino",
@@ -118,6 +134,7 @@ export const JURISPRUDENCIA: Fallo[] = [
     area: "laboral",
     sumario: "Se declaro la inconstitucionalidad del art. 39 inc. 1 de la LRT que vedaba el acceso a la via civil, por vulnerar el derecho a la reparacion integral del dano (art. 19 CN) y el principio de igualdad (art. 16 CN).",
     voces: ["accidente", "ART", "reparacion integral", "inconstitucionalidad", "danos"],
+    verificado: true,
   },
   {
     id: "gonzalez-posse",
@@ -128,6 +145,7 @@ export const JURISPRUDENCIA: Fallo[] = [
     area: "laboral",
     sumario: "Se hizo lugar a las multas de los arts. 8, 9 y 15 de la Ley Nacional de Empleo por registracion deficiente del vinculo laboral. Se considero acreditada la diferencia entre la remuneracion real y la registrada.",
     voces: ["empleo no registrado", "multas", "LNE", "registracion"],
+    verificado: false,
   },
   {
     id: "alvarez-cencosud",
@@ -138,6 +156,7 @@ export const JURISPRUDENCIA: Fallo[] = [
     area: "laboral",
     sumario: "La CSJN confirmo que el despido motivado en razones discriminatorias (actividad sindical) es nulo. Ordeno la reinstalacion de los trabajadores y el pago de salarios caidos, en aplicacion de la ley 23.592.",
     voces: ["discriminacion", "despido", "reinstalacion", "actividad sindical", "nulidad"],
+    verificado: true,
   },
   {
     id: "arostegui",
@@ -148,6 +167,7 @@ export const JURISPRUDENCIA: Fallo[] = [
     area: "laboral",
     sumario: "La Corte ratifico el derecho del trabajador accidentado a reclamar la reparacion integral por via civil, y que las prestaciones de la LRT constituyen un piso minimo que no obsta al reclamo de mayores danos.",
     voces: ["accidente", "reparacion integral", "via civil", "danos", "ART"],
+    verificado: true,
   },
   {
     id: "ramos-jose",
@@ -158,6 +178,7 @@ export const JURISPRUDENCIA: Fallo[] = [
     area: "laboral",
     sumario: "La CSJN reconocio el derecho indemnizatorio de un empleado contratado de manera sucesiva por el Estado bajo modalidades temporales que encubrian una relacion permanente.",
     voces: ["empleo publico", "fraude", "contratacion", "estabilidad", "Estado"],
+    verificado: true,
   },
   {
     id: "cantilo",
@@ -168,6 +189,7 @@ export const JURISPRUDENCIA: Fallo[] = [
     area: "laboral",
     sumario: "Se reconocio el caracter laboral de la relacion en modalidad de teletrabajo, aplicando los principios de la LCT y la Ley 27.555 de Teletrabajo.",
     voces: ["teletrabajo", "jornada", "ley 27.555", "relacion de dependencia"],
+    verificado: false,
   },
   {
     id: "ruiz-diaz",
@@ -178,6 +200,51 @@ export const JURISPRUDENCIA: Fallo[] = [
     area: "laboral",
     sumario: "Se aplico la presuncion del art. 178 LCT que establece que el despido de la mujer trabajadora dentro del plazo de 7 meses y medio anteriores o posteriores al parto se presume discriminatorio, correspondiendo la indemnizacion agravada del art. 182 LCT.",
     voces: ["embarazo", "maternidad", "despido", "indemnizacion agravada", "presuncion"],
+    verificado: false,
+  },
+  {
+    id: "perez-disco",
+    caratula: "Perez, Anibal Raul c/ Disco SA s/ despido",
+    tribunal: "CSJN",
+    fecha: "2009-09-01",
+    tema: "Naturaleza salarial de los vales alimentarios — art. 103 bis LCT",
+    area: "laboral",
+    sumario: "La CSJN declaro la inconstitucionalidad del art. 103 bis inc. c) LCT en cuanto negaba caracter remuneratorio a los vales alimentarios, por contrariar el concepto de remuneracion del Convenio 95 OIT y el art. 14 bis CN. Los vales tienen naturaleza salarial.",
+    voces: ["remuneracion", "vales alimentarios", "salario", "inconstitucionalidad", "OIT"],
+    verificado: true,
+  },
+  {
+    id: "madorran",
+    caratula: "Madorran, Marta Cristina c/ Administracion Nacional de Aduanas s/ reincorporacion",
+    tribunal: "CSJN",
+    fecha: "2007-05-03",
+    tema: "Estabilidad propia del empleado publico — art. 14 bis CN",
+    area: "laboral",
+    sumario: "La CSJN reconocio la estabilidad propia del empleado publico (art. 14 bis CN), declarando la validez de la reincorporacion frente a un despido incausado en el ambito de la Administracion Publica.",
+    voces: ["empleo publico", "estabilidad", "reincorporacion", "art. 14 bis"],
+    verificado: true,
+  },
+  {
+    id: "milone-asociart",
+    caratula: "Milone, Juan Antonio c/ Asociart SA ART s/ accidente",
+    tribunal: "CSJN",
+    fecha: "2004-10-26",
+    tema: "Inconstitucionalidad del pago en renta periodica — LRT",
+    area: "laboral",
+    sumario: "La Corte declaro la inconstitucionalidad del art. 14, ap. 2.b de la LRT que imponia el pago de la indemnizacion por incapacidad en forma de renta periodica, por afectar el derecho a una reparacion integral y la disponibilidad del credito por el trabajador.",
+    voces: ["accidente", "ART", "renta periodica", "reparacion integral", "inconstitucionalidad"],
+    verificado: true,
+  },
+  {
+    id: "ate-2008",
+    caratula: "Asociacion Trabajadores del Estado (ATE) c/ Ministerio de Trabajo s/ ley de asociaciones sindicales",
+    tribunal: "CSJN",
+    fecha: "2008-11-11",
+    tema: "Libertad sindical — inconstitucionalidad art. 41 ley 23.551",
+    area: "laboral",
+    sumario: "La CSJN declaro la inconstitucionalidad del art. 41 inc. a) de la ley 23.551 que exigia afiliacion a la asociacion sindical con personeria gremial para ser delegado, por vulnerar la libertad sindical (art. 14 bis CN y Convenio 87 OIT).",
+    voces: ["libertad sindical", "delegado", "personeria gremial", "OIT", "inconstitucionalidad"],
+    verificado: true,
   },
 ];
 

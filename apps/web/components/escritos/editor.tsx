@@ -3,11 +3,25 @@
 import { useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
-import { Copy, Download, Save, Check, AlignJustify } from "lucide-react";
+import { Copy, Download, Save, Check, AlignJustify, FileText, PenLine } from "lucide-react";
 import type { Escrito } from "@/types";
 
 interface EscritoEditorProps {
   escrito: Escrito;
+}
+
+/** Detecta títulos de sección para resaltarlos en negrita en el DOCX. */
+function isHeading(line: string): boolean {
+  // Encabezado con numeral romano: "I. OBJETO", "VIII) PETITORIO", "IV - HECHOS"
+  if (/^[IVXLCDM]+\s*[.)\-]\s+\S/.test(line)) return true;
+  const keywords = [
+    "OBJETO", "PERSONERIA", "PERSONERÍA", "HECHOS", "DERECHO", "PRUEBA",
+    "PETITORIO", "LIQUIDACION", "LIQUIDACIÓN", "RESERVA", "COMPETENCIA",
+    "DOCUMENTAL", "TESTIMONIAL", "PERICIAL", "INFORMATIVA", "CONFESIONAL",
+  ];
+  const letters = line.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ]/g, "");
+  const isAllCaps = letters.length > 0 && letters === letters.toUpperCase() && line.length <= 60;
+  return isAllCaps && keywords.some((k) => line.toUpperCase().includes(k));
 }
 
 export function EscritoEditor({ escrito }: EscritoEditorProps) {
@@ -43,23 +57,72 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
   }
 
   async function handleExportDocx() {
-    const { Document, Packer, Paragraph, TextRun } = await import("docx");
+    const { Document, Packer, Paragraph, TextRun, AlignmentType, Header, Footer, PageNumber } =
+      await import("docx");
     const { saveAs } = await import("file-saver");
 
-    const paragraphs = content.split("\n").map(
-      (line) =>
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: line,
-              font: "Times New Roman",
-              size: 24,
-            }),
-          ],
-          spacing: { line: 360 },
-          alignment: "both" as unknown as undefined,
+    // Membrete con datos del profesional (si los cargó en su perfil).
+    const { data: { user } } = await supabase.auth.getUser();
+    let membrete = "";
+    if (user) {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("full_name, matricula, colegio_abogados, estudio_nombre")
+        .eq("id", user.id)
+        .single();
+      if (prof) {
+        const linea1 = prof.estudio_nombre || prof.full_name || "";
+        const datos = [
+          prof.full_name && prof.estudio_nombre ? prof.full_name : "",
+          prof.matricula ? `Mat. ${prof.matricula}` : "",
+          prof.colegio_abogados || "",
+        ].filter(Boolean).join(" · ");
+        membrete = [linea1, datos].filter(Boolean).join("\n");
+      }
+    }
+
+    const TXT = (text: string, opts: { bold?: boolean } = {}) =>
+      new TextRun({ text, font: "Times New Roman", size: 24, bold: opts.bold });
+
+    const bodyParagraphs = content.split("\n").map((line) => {
+      const trimmed = line.trim();
+      if (trimmed === "") {
+        return new Paragraph({ children: [TXT("")], spacing: { line: 360 } });
+      }
+      const esTitulo = isHeading(trimmed);
+      return new Paragraph({
+        children: [TXT(line, { bold: esTitulo })],
+        spacing: { line: 360, before: esTitulo ? 160 : 0 },
+        alignment: esTitulo ? AlignmentType.LEFT : AlignmentType.JUSTIFIED,
+      });
+    });
+
+    const header = membrete
+      ? new Header({
+          children: membrete.split("\n").map(
+            (l, i) =>
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                spacing: { line: 240 },
+                children: [new TextRun({ text: l, font: "Times New Roman", size: i === 0 ? 22 : 18, bold: i === 0 })],
+              }),
+          ),
         })
-    );
+      : undefined;
+
+    const footer = new Footer({
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [
+            new TextRun({ text: "Página ", font: "Times New Roman", size: 18 }),
+            new TextRun({ children: [PageNumber.CURRENT], font: "Times New Roman", size: 18 }),
+            new TextRun({ text: " de ", font: "Times New Roman", size: 18 }),
+            new TextRun({ children: [PageNumber.TOTAL_PAGES], font: "Times New Roman", size: 18 }),
+          ],
+        }),
+      ],
+    });
 
     const doc = new Document({
       sections: [
@@ -70,13 +133,56 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
               margin: { top: 1417, right: 1417, bottom: 1417, left: 1417 },
             },
           },
-          children: paragraphs,
+          headers: header ? { default: header } : undefined,
+          footers: { default: footer },
+          children: bodyParagraphs,
         },
       ],
     });
 
     const blob = await Packer.toBlob(doc);
     saveAs(blob, `${escrito.titulo}.docx`);
+  }
+
+  async function handleInsertSignature() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("full_name, matricula, colegio_abogados")
+      .eq("id", user.id)
+      .single();
+    const nombre = prof?.full_name || "";
+    const mat = prof?.matricula ? `Mat. ${prof.matricula}` : "";
+    const colegio = prof?.colegio_abogados || "";
+    const firma = [
+      "",
+      "",
+      "_______________________________",
+      nombre,
+      ["Abogado/a", mat].filter(Boolean).join(" — "),
+      colegio,
+    ].filter((l, i) => i < 3 || l).join("\n");
+    setContent((c) => `${c}\n${firma}`);
+  }
+
+  function handleExportPdf() {
+    const esc = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const html = content.split("\n").map((line) => {
+      const t = line.trim();
+      if (t === "") return "<p>&nbsp;</p>";
+      const heading = /^[IVXLCDM]+\s*[.)\-]\s+\S/.test(t);
+      return `<p class="${heading ? "h" : ""}">${esc(line)}</p>`;
+    }).join("");
+    const doc = `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${esc(escrito.titulo)}</title>
+<style>@page{size:A4;margin:2.5cm} body{font-family:'Times New Roman',Georgia,serif;font-size:12pt;line-height:1.8;color:#000;text-align:justify}
+p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style></head>
+<body>${html}<script>window.onload=function(){window.print()}<\/script></body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) { alert("Permití las ventanas emergentes para exportar a PDF."); return; }
+    w.document.write(doc);
+    w.document.close();
   }
 
   return (
@@ -105,12 +211,30 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
           </button>
 
           <button
+            onClick={handleInsertSignature}
+            title="Insertar firma del estudio"
+            className="flex items-center gap-1.5 rounded border border-border bg-white px-3 py-1.5 text-[11px] font-semibold text-[var(--brand-ink-2)] hover:border-[var(--brand-gold)]"
+          >
+            <PenLine className="h-3.5 w-3.5" />
+            Firma
+          </button>
+
+          <button
             onClick={handleExportDocx}
             title="Exportar como DOCX"
             className="flex items-center gap-1.5 rounded border border-border bg-white px-3 py-1.5 text-[11px] font-semibold text-[var(--brand-ink-2)] hover:border-[var(--brand-gold)]"
           >
             <Download className="h-3.5 w-3.5" />
             DOCX
+          </button>
+
+          <button
+            onClick={handleExportPdf}
+            title="Exportar como PDF (imprimir)"
+            className="flex items-center gap-1.5 rounded border border-border bg-white px-3 py-1.5 text-[11px] font-semibold text-[var(--brand-ink-2)] hover:border-[var(--brand-gold)]"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            PDF
           </button>
 
           <button

@@ -14,3 +14,7 @@ supabase/.temp
 Thumbs.db
 
 .vercel
+
+# Archivo temporal de verificación (no commitear)
+apps/web/verify_calc.mjs
+comitear.bat

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Caso, Fuero, Jurisdiccion, EstadoCaso } from "@/types";
@@ -58,6 +58,19 @@ export function CasosClient({ initialCasos }: CasosClientProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [sheetCaso, setSheetCaso] = useState<Caso | null>(null);
   const [saving, setSaving] = useState(false);
+  const [orgId, setOrgId] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadOrg() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: owned } = await supabase.from("organizations").select("id").eq("owner_id", user.id).maybeSingle();
+      if (owned) { setOrgId(owned.id); return; }
+      const { data: mem } = await supabase.from("organization_members").select("organization_id").eq("user_id", user.id).eq("status", "active").maybeSingle();
+      if (mem) setOrgId(mem.organization_id);
+    }
+    loadOrg();
+  }, [supabase]);
 
   const casosFiltrados = casos.filter((c) => {
     const matchEstado = filtroEstado === "todos" || c.estado === filtroEstado;
@@ -88,6 +101,7 @@ export function CasosClient({ initialCasos }: CasosClientProps) {
       cliente_nombre: (form.get("cliente_nombre") as string) || null,
       contraparte_nombre: (form.get("contraparte_nombre") as string) || null,
       notas: (form.get("notas") as string) || null,
+      organization_id: form.get("compartir") === "on" && orgId ? orgId : null,
     };
 
     const { data, error } = await supabase
@@ -117,6 +131,7 @@ export function CasosClient({ initialCasos }: CasosClientProps) {
       cliente_nombre: (form.get("cliente_nombre") as string) || null,
       contraparte_nombre: (form.get("contraparte_nombre") as string) || null,
       notas: (form.get("notas") as string) || null,
+      organization_id: form.get("compartir") === "on" && orgId ? orgId : null,
     };
 
     const { error } = await supabase
@@ -157,7 +172,7 @@ export function CasosClient({ initialCasos }: CasosClientProps) {
                 Completá los datos del caso. Los campos con * son obligatorios.
               </DialogDescription>
             </DialogHeader>
-            <CasoForm onSubmit={handleCreate} saving={saving} />
+            <CasoForm onSubmit={handleCreate} saving={saving} orgId={orgId} />
           </DialogContent>
         </Dialog>
       </div>
@@ -210,7 +225,7 @@ export function CasosClient({ initialCasos }: CasosClientProps) {
           </SheetHeader>
           {sheetCaso && (
             <ScrollArea className="flex-1 px-4">
-              <CasoForm caso={sheetCaso} onSubmit={handleUpdate} saving={saving} />
+              <CasoForm caso={sheetCaso} onSubmit={handleUpdate} saving={saving} orgId={orgId} />
             </ScrollArea>
           )}
         </SheetContent>
@@ -291,9 +306,10 @@ interface CasoFormProps {
   caso?: Caso;
   onSubmit: (form: FormData) => Promise<void>;
   saving: boolean;
+  orgId?: string | null;
 }
 
-function CasoForm({ caso, onSubmit, saving }: CasoFormProps) {
+function CasoForm({ caso, onSubmit, saving, orgId }: CasoFormProps) {
   return (
     <form
       className="space-y-4"
@@ -414,6 +430,13 @@ function CasoForm({ caso, onSubmit, saving }: CasoFormProps) {
           rows={3}
         />
       </div>
+
+      {orgId && (
+        <label className="flex items-center gap-2.5 cursor-pointer rounded border border-border bg-slate-50 px-3 py-2.5">
+          <input type="checkbox" name="compartir" defaultChecked={Boolean(caso?.organization_id)} className="h-4 w-4" />
+          <span className="text-sm text-slate-700">Compartir este caso con mi estudio (lo ve todo el equipo)</span>
+        </label>
+      )}
 
       <DialogFooter>
         <Button type="submit" disabled={saving}>
