@@ -31,7 +31,13 @@ export interface Fallo {
   verificado: boolean;
 }
 
-export const LEYES: Ley[] = [
+import {
+  LCT_ARTICULOS_EXTRA,
+  CCCN_ARTICULOS_EXTRA,
+  LEYES_COMPLEMENTARIAS,
+} from "./corpus-complementario";
+
+const LEYES_BASE: Ley[] = [
   {
     id: "lct",
     nombre: "Ley de Contrato de Trabajo",
@@ -111,6 +117,16 @@ export const LEYES: Ley[] = [
       { numero: "14", titulo: "Prestaciones en especie", texto: "Las ART otorgaran a los trabajadores que sufran algunas de las contingencias previstas en esta ley las siguientes prestaciones en especie: a) Asistencia medica y farmaceutica; b) Protesis y ortopedia; c) Rehabilitacion; d) Recalificacion profesional; e) Servicio funerario." },
     ],
   },
+];
+
+/** Corpus completo: leyes base + artículos extra + leyes complementarias. */
+export const LEYES: Ley[] = [
+  ...LEYES_BASE.map((ley) => {
+    if (ley.id === "lct") return { ...ley, articulos: [...ley.articulos, ...LCT_ARTICULOS_EXTRA] };
+    if (ley.id === "cccn") return { ...ley, articulos: [...ley.articulos, ...CCCN_ARTICULOS_EXTRA] };
+    return ley;
+  }),
+  ...LEYES_COMPLEMENTARIAS,
 ];
 
 export const JURISPRUDENCIA: Fallo[] = [

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHmac, timingSafeEqual } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { getSubscription, planFromReason } from "@/lib/billing/mercadopago";
 
@@ -18,6 +19,52 @@ function serviceClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false } },
   );
+}
+
+/**
+ * Valida la firma del webhook de Mercado Pago (header `x-signature`).
+ *
+ * Formato del header: "ts=<timestamp>,v1=<hmac>". El HMAC-SHA256 se calcula
+ * sobre el template "id:<data.id>;request-id:<x-request-id>;ts:<ts>;" usando
+ * la clave secreta del webhook (panel de MP → Webhooks → clave secreta),
+ * configurada en MP_WEBHOOK_SECRET.
+ *
+ * Docs: https://www.mercadopago.com.ar/developers/es/docs/your-integrations/notifications/webhooks
+ */
+function verifySignature(request: Request, url: URL, dataId: string | null): boolean {
+  const secret = process.env.MP_WEBHOOK_SECRET;
+  // Fail-closed en producción: sin secreto configurado no se aceptan webhooks.
+  if (!secret) return process.env.NODE_ENV !== "production";
+
+  const signature = request.headers.get("x-signature");
+  const requestId = request.headers.get("x-request-id");
+  if (!signature) return false;
+
+  const parts = Object.fromEntries(
+    signature.split(",").map((p) => {
+      const [k, ...v] = p.split("=");
+      return [k.trim(), v.join("=").trim()];
+    }),
+  );
+  const ts = parts["ts"];
+  const v1 = parts["v1"];
+  if (!ts || !v1) return false;
+
+  // MP usa el query param data.id (en minúsculas) para el manifest.
+  const id = (url.searchParams.get("data.id") ?? dataId ?? "").toLowerCase();
+
+  const segments: string[] = [];
+  if (id) segments.push(`id:${id};`);
+  if (requestId) segments.push(`request-id:${requestId};`);
+  segments.push(`ts:${ts};`);
+  const manifest = segments.join("");
+
+  const expected = createHmac("sha256", secret).update(manifest).digest("hex");
+  try {
+    return timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(v1, "hex"));
+  } catch {
+    return false;
+  }
 }
 
 function extractPreapprovalId(url: URL, body: Record<string, unknown> | null): string | null {
@@ -51,6 +98,11 @@ export async function POST(request: Request) {
   const preapprovalId = extractPreapprovalId(url, body);
   if (!preapprovalId) {
     return NextResponse.json({ error: "Sin id de suscripción" }, { status: 200 });
+  }
+
+  // Verificación de autenticidad: firma HMAC de Mercado Pago.
+  if (!verifySignature(request, url, preapprovalId)) {
+    return NextResponse.json({ error: "Firma inválida" }, { status: 401 });
   }
 
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {

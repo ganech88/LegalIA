@@ -239,6 +239,117 @@ export function calcularIntereses(params: {
   return { dias, intereses, total: capital + intereses, tasa_diaria };
 }
 
+/**
+ * ANEXO DE LIQUIDACIÓN AUDITABLE — diferencial del producto.
+ *
+ * Genera el texto del anexo con la fórmula, la norma y los valores de cada
+ * rubro, listo para acompañar la demanda. El objetivo es que la contraparte,
+ * el juzgado o el propio cliente puedan auditar cada número.
+ */
+export function generarAnexoLiquidacion(
+  result: IndemnizacionResult,
+  params: { mejor_remuneracion: number; fecha_ingreso: string; fecha_despido: string; tope_cct?: number; aplica_vizzoti?: boolean },
+): string {
+  const mr = params.mejor_remuneracion;
+  const L: string[] = [];
+  L.push("ANEXO — LIQUIDACIÓN DETALLADA DE RUBROS INDEMNIZATORIOS");
+  L.push("");
+  L.push("Parámetros de cálculo:");
+  L.push(`- Fecha de ingreso: ${params.fecha_ingreso}`);
+  L.push(`- Fecha de despido: ${params.fecha_despido}`);
+  L.push(`- Antigüedad computada: ${result.antiguedad_anios} período(s) indemnizable(s) (años completos más fracción mayor de 3 meses, art. 245 LCT)`);
+  L.push(`- Mejor remuneración mensual, normal y habitual (art. 245 LCT): ${formatCurrency(mr)}`);
+  if (params.tope_cct && params.tope_cct > 0) {
+    L.push(`- Tope convencional (3 × promedio CCT): ${formatCurrency(params.tope_cct * 3)}${result.tope_aplicado ? " — APLICADO" : " — no alcanzado"}`);
+    if (result.tope_aplicado && params.aplica_vizzoti) {
+      L.push(`- Doctrina "Vizzoti" (CSJN, 14/09/2004): la base no puede reducirse más del 33%; piso del 67% de la MRMNH.`);
+    }
+  }
+  L.push(`- Base de cálculo resultante: ${formatCurrency(result.base_calculo)}`);
+  L.push("");
+  L.push("Rubros:");
+  L.push("");
+
+  let n = 1;
+  const rubro = (titulo: string, norma: string, formula: string, monto: number) => {
+    L.push(`${n}. ${titulo}`);
+    L.push(`   Norma: ${norma}`);
+    L.push(`   Fórmula: ${formula}`);
+    L.push(`   Importe: ${formatCurrency(monto)}`);
+    L.push("");
+    n++;
+  };
+
+  rubro(
+    "Indemnización por antigüedad",
+    "Art. 245 LCT (t.o. y doctrina Vizzoti CSJN)",
+    `${formatCurrency(result.base_calculo)} (base) × ${result.antiguedad_anios} período(s)`,
+    result.indemnizacion_antiguedad,
+  );
+  rubro(
+    "Indemnización sustitutiva de preaviso",
+    "Arts. 231 y 232 LCT",
+    `${formatCurrency(mr)} × ${result.preaviso_meses} mes(es)`,
+    result.preaviso,
+  );
+  if (result.integracion > 0) {
+    rubro(
+      "Integración del mes de despido",
+      "Art. 233 LCT",
+      `${formatCurrency(mr)} / 30 × ${result.integracion_dias} día(s) faltante(s) del mes`,
+      result.integracion,
+    );
+  }
+  rubro(
+    "SAC sobre preaviso e integración",
+    "Art. 123 LCT",
+    `(${formatCurrency(result.preaviso)} + ${formatCurrency(result.integracion)}) / 12`,
+    result.sac_preaviso,
+  );
+  rubro(
+    "Vacaciones proporcionales no gozadas (con SAC)",
+    "Arts. 150, 155 y 156 LCT",
+    `${formatCurrency(mr)} / 25 × días de vacaciones según antigüedad × proporción del año trabajado`,
+    result.vacaciones_proporcionales,
+  );
+  rubro(
+    "SAC proporcional del semestre",
+    "Arts. 121 y 122 LCT",
+    `${formatCurrency(mr)} / 2 × proporción del semestre trabajado`,
+    result.sac_proporcional,
+  );
+  if (result.ley_25323_art1 > 0) {
+    rubro(
+      "Incremento por relación no registrada",
+      "Art. 1, Ley 25.323",
+      `100% de la indemnización del art. 245 LCT (${formatCurrency(result.indemnizacion_antiguedad)})`,
+      result.ley_25323_art1,
+    );
+  }
+  if (result.ley_25323_art2 > 0) {
+    rubro(
+      "Incremento por falta de pago en término",
+      "Art. 2, Ley 25.323",
+      `50% × (arts. 245 + 232 + 233 LCT) = 50% × ${formatCurrency(result.indemnizacion_antiguedad + result.preaviso + result.integracion)}`,
+      result.ley_25323_art2,
+    );
+  }
+  if (result.multa_art_80 > 0) {
+    rubro(
+      "Indemnización por falta de entrega de certificados",
+      "Art. 80 LCT (texto según art. 45, Ley 25.345)",
+      `3 × ${formatCurrency(mr)}`,
+      result.multa_art_80,
+    );
+  }
+
+  L.push(`TOTAL DE LA LIQUIDACIÓN: ${formatCurrency(result.total)}`);
+  L.push("");
+  L.push("Se deja constancia de que los importes se calcularon a valores nominales a la fecha del distracto; se solicitará la aplicación de intereses conforme la tasa que fije el tribunal desde la exigibilidad de cada rubro y hasta el efectivo pago.");
+
+  return L.join("\n");
+}
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",

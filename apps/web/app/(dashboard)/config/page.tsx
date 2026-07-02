@@ -21,6 +21,7 @@ export default function ConfigPage() {
   const [especialidades, setEspecialidades] = useState<Especialidad[]>([]);
   const [jurisdiccion, setJurisdiccion] = useState<Jurisdiccion | "">("");
   const [estudioNombre, setEstudioNombre] = useState("");
+  const [estiloRedaccion, setEstiloRedaccion] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -66,6 +67,7 @@ export default function ConfigPage() {
         setEspecialidades(p.especialidad ?? []);
         setJurisdiccion((p.jurisdiccion_principal ?? "") as Jurisdiccion | "");
         setEstudioNombre(p.estudio_nombre ?? "");
+        setEstiloRedaccion((data as { estilo_redaccion?: string | null }).estilo_redaccion ?? "");
       }
       setLoading(false);
     }
@@ -95,6 +97,7 @@ export default function ConfigPage() {
         especialidad: especialidades,
         jurisdiccion_principal: jurisdiccion || null,
         estudio_nombre: estudioNombre || null,
+        estilo_redaccion: estiloRedaccion.trim() || null,
       })
       .eq("id", user.id);
 
@@ -202,14 +205,14 @@ export default function ConfigPage() {
                   disabled={upgrading !== null}
                   className="rounded bg-[var(--brand-gold)] px-3 py-1.5 text-[12px] font-bold text-[var(--brand-navy)] disabled:opacity-60"
                 >
-                  {upgrading === "profesional" ? "Redirigiendo…" : ciclo === "anual" ? "Profesional · $120.000/año →" : "Profesional · $12.000/mes →"}
+                  {upgrading === "profesional" ? "Redirigiendo…" : ciclo === "anual" ? "Profesional · $150.000/año →" : "Profesional · $15.000/mes →"}
                 </button>
                 <button
                   onClick={() => handleUpgrade("estudio")}
                   disabled={upgrading !== null}
                   className="rounded border border-[var(--brand-navy)] px-3 py-1.5 text-[12px] font-bold text-[var(--brand-navy)] hover:bg-[var(--brand-paper)] disabled:opacity-60"
                 >
-                  {upgrading === "estudio" ? "Redirigiendo…" : ciclo === "anual" ? "Estudio · $250.000/año →" : "Estudio · $25.000/mes →"}
+                  {upgrading === "estudio" ? "Redirigiendo…" : ciclo === "anual" ? "Estudio · $300.000/año →" : "Estudio · $30.000/mes →"}
                 </button>
               </div>
             </div>
@@ -263,6 +266,24 @@ export default function ConfigPage() {
               />
             </label>
           </div>
+        </section>
+
+        {/* Estilo de redacción */}
+        <section className="card-editorial p-6 mb-6">
+          <div className="t-overline text-[var(--brand-gold)] mb-1.5">ESTILO DE REDACCIÓN</div>
+          <p className="mb-3 text-[12px] text-[var(--brand-mute)]">
+            Describí tu estilo (o pegá un fragmento de un escrito tuyo). LegalIA lo aplicará a todos
+            los escritos que genere para vos: fórmulas de encabezado, tono, forma de citar, cierre.
+          </p>
+          <textarea
+            value={estiloRedaccion}
+            onChange={e => setEstiloRedaccion(e.target.value)}
+            maxLength={1500}
+            rows={5}
+            placeholder={'Ej.: "Uso encabezados en mayúsculas con numeración romana, cito la norma completa la primera vez (Ley de Contrato de Trabajo N° 20.744) y abreviada después, evito latinismos, y cierro el petitorio con \'Proveer de conformidad, SERÁ JUSTICIA\'."'}
+            className="w-full rounded border border-border bg-white px-3 py-2.5 text-[13px] focus:border-[var(--brand-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold-pale)]"
+          />
+          <p className="mt-1 text-right text-[10px] text-[var(--brand-mute)]">{estiloRedaccion.length}/1500</p>
         </section>
 
         {/* Specialties */}

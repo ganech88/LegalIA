@@ -39,6 +39,8 @@ export async function updateSession(request: NextRequest) {
     path === "/" ||
     path === "/terminos" ||
     path === "/privacidad" ||
+    path.startsWith("/herramientas") || // calculadoras públicas (SEO / adquisición)
+
     path.startsWith("/api/webhooks") ||
     path.startsWith("/api/billing/webhook") || // webhook server-to-server (sin sesión)
     path.startsWith("/api/cron/"); // cron jobs (autorizados por CRON_SECRET)

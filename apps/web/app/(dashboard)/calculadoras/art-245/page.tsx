@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { calcularIndemnizacionArt245, formatCurrency } from "@/lib/legal/calculadoras";
+import { calcularIndemnizacionArt245, generarAnexoLiquidacion, formatCurrency } from "@/lib/legal/calculadoras";
 import type { IndemnizacionResult } from "@/lib/legal/calculadoras";
 
 export default function Art245Page() {
@@ -17,7 +17,27 @@ export default function Art245Page() {
   const [ley25323art2, setLey25323art2] = useState(false);
   const [multaArt80, setMultaArt80] = useState(false);
   const [result, setResult] = useState<IndemnizacionResult | null>(null);
+  const [anexoCopiado, setAnexoCopiado] = useState(false);
   const router = useRouter();
+
+  function buildAnexo(): string {
+    if (!result) return "";
+    return generarAnexoLiquidacion(result, {
+      mejor_remuneracion: parseFloat(mejorRemuneracion),
+      fecha_ingreso: fechaIngreso,
+      fecha_despido: fechaDespido,
+      tope_cct: topeCct ? parseFloat(topeCct) : undefined,
+      aplica_vizzoti: aplicaVizzoti,
+    });
+  }
+
+  async function copiarAnexo() {
+    const anexo = buildAnexo();
+    if (!anexo) return;
+    await navigator.clipboard.writeText(anexo);
+    setAnexoCopiado(true);
+    setTimeout(() => setAnexoCopiado(false), 2500);
+  }
 
   function generarDemanda() {
     if (!result) return;
@@ -30,6 +50,7 @@ export default function Art245Page() {
       mejor_remuneracion: mejorRemuneracion,
       monto_reclamado: String(Math.round(result.total)),
       rubros_reclamados: rubrosTexto,
+      anexo_liquidacion: buildAnexo(),
     };
     try {
       sessionStorage.setItem("legalia:prefill", JSON.stringify(prefill));
@@ -178,15 +199,21 @@ export default function Art245Page() {
                   </tfoot>
                 </table>
 
-                <div className="mt-6 pt-4 border-t border-border">
+                <div className="mt-6 pt-4 border-t border-border flex flex-wrap items-center gap-3">
                   <button
                     onClick={generarDemanda}
                     className="inline-flex items-center gap-2 rounded bg-[var(--brand-gold)] px-4 py-2.5 text-[13px] font-semibold text-[var(--brand-navy)] hover:bg-[var(--brand-gold)]/80"
                   >
                     Generar demanda con estos datos →
                   </button>
-                  <p className="mt-2 text-[11px] text-[var(--brand-mute)]">
-                    Lleva fechas, remuneración y liquidación al formulario de demanda laboral.
+                  <button
+                    onClick={copiarAnexo}
+                    className="inline-flex items-center gap-2 rounded border border-[var(--brand-navy)] px-4 py-2.5 text-[13px] font-semibold text-[var(--brand-navy)] hover:bg-[var(--brand-navy)]/5"
+                  >
+                    {anexoCopiado ? "✓ Anexo copiado" : "Copiar anexo auditable"}
+                  </button>
+                  <p className="w-full mt-1 text-[11px] text-[var(--brand-mute)]">
+                    El anexo auditable detalla norma, fórmula e importe de cada rubro — listo para acompañar la demanda.
                   </p>
                 </div>
               </div>

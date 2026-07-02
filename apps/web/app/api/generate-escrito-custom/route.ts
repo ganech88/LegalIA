@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { generateWithFallback, providerModelName } from "@/lib/ai/provider";
+import { sanitizePromptValue, ANTI_INJECTION_GUARD } from "@/lib/ai/sanitize";
+import { checkIpRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -10,8 +12,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  const { tipo_escrito, fuero, jurisdiccion, descripcion, datos_caso } =
-    await request.json();
+  if (!checkIpRateLimit(getClientIp(request), "escrito", 15, 60)) {
+    return NextResponse.json(
+      { error: "Demasiadas solicitudes desde esta conexión. Esperá un momento." },
+      { status: 429 }
+    );
+  }
+
+  const body = await request.json();
+  const tipo_escrito = sanitizePromptValue(body.tipo_escrito).slice(0, 200);
+  const fuero = sanitizePromptValue(body.fuero).slice(0, 100);
+  const jurisdiccion = sanitizePromptValue(body.jurisdiccion).slice(0, 100);
+  const descripcion = sanitizePromptValue(body.descripcion);
+  const datos_caso = sanitizePromptValue(body.datos_caso);
 
   if (!tipo_escrito || !fuero || !jurisdiccion || !descripcion || !datos_caso) {
     return NextResponse.json(
@@ -42,6 +55,16 @@ export async function POST(request: Request) {
     );
   }
 
+  // Estilo de redacción personalizado del abogado (si lo configuró).
+  const { data: perfil } = await supabase
+    .from("profiles")
+    .select("estilo_redaccion")
+    .eq("id", user.id)
+    .single();
+  const estilo = perfil?.estilo_redaccion
+    ? `\n\nEstilo de redacción del letrado (respetalo en la medida en que no contradiga el formato procesal): ${sanitizePromptValue(perfil.estilo_redaccion).slice(0, 1500)}`
+    : "";
+
   const systemPrompt =
     `Sos un experto en derecho argentino con amplia experiencia en redacción de escritos judiciales y extrajudiciales. ` +
     `El abogado necesita que generes un escrito de tipo: ${tipo_escrito}.\n\n` +
@@ -51,8 +74,10 @@ export async function POST(request: Request) {
     `Datos del caso:\n${datos_caso}\n\n` +
     `Generá un documento legal completo, formal, con formato procesal argentino, listo para presentar ante el tribunal correspondiente. ` +
     `Incluí todos los apartados necesarios según el tipo de escrito (encabezado, objeto, hechos, derecho, prueba, petitorio, etc.). ` +
-    `Citá artículos de ley vigentes que correspondan. ` +
-    `Usá el estilo procesal argentino estándar.`;
+    `Citá artículos de ley vigentes que correspondan; citá únicamente normas de cuya existencia y contenido estés seguro. ` +
+    `Usá el estilo procesal argentino estándar.` +
+    estilo +
+    ANTI_INJECTION_GUARD;
 
   try {
     const { content, provider } = await generateWithFallback(

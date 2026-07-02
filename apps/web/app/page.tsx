@@ -12,9 +12,9 @@ const FEATURES = [
 ];
 
 const PLANS = [
-  { name: "Gratis", price: "$0", highlights: ["3 escritos/mes", "20 consultas IA", "Calculadoras basicas"] },
-  { name: "Profesional", price: "$12.000/mes", featured: true, highlights: ["30 escritos/mes", "Consultas IA ilimitadas", "Todas las calculadoras", "Mini CRM de casos"] },
-  { name: "Estudio", price: "$25.000/mes", highlights: ["Escritos ilimitados", "Hasta 5 usuarios", "Prioridad de soporte", "Branding personalizado"] },
+  { name: "Gratis", price: "$0", highlights: ["3 escritos/mes con citas verificadas", "20 consultas IA", "Calculadoras ilimitadas", "Gratis para siempre, sin tarjeta"] },
+  { name: "Profesional", price: "$15.000/mes", featured: true, highlights: ["30 escritos/mes con citas verificadas", "Consultas IA ilimitadas", "Estilo de redacción personalizado", "Agenda de vencimientos con alertas"] },
+  { name: "Estudio", price: "$30.000/mes", highlights: ["Escritos ilimitados", "Hasta 5 usuarios", "Mini CRM de casos compartidos", "Soporte dedicado"] },
 ];
 
 function formatDateAR(date: Date): string {
@@ -53,6 +53,7 @@ export default function HomePage() {
           <nav className="hidden items-center gap-8 md:flex">
             <a href="#features" className="text-sm font-medium text-[var(--brand-ink-2)] hover:text-[var(--brand-navy)]">Funciones</a>
             <a href="#pricing" className="text-sm font-medium text-[var(--brand-ink-2)] hover:text-[var(--brand-navy)]">Precios</a>
+            <Link href="/herramientas" className="text-sm font-medium text-[var(--brand-ink-2)] hover:text-[var(--brand-navy)]">Herramientas gratis</Link>
           </nav>
           <div className="hidden gap-3 md:flex">
             <Link href="/login" className="rounded border border-[var(--brand-navy)] bg-transparent px-4 py-2 text-sm font-medium text-[var(--brand-navy)] hover:bg-[var(--brand-paper)]">

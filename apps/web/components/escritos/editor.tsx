@@ -3,7 +3,8 @@
 import { useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
-import { Copy, Download, Save, Check, AlignJustify, FileText, PenLine } from "lucide-react";
+import { Copy, Download, Save, Check, AlignJustify, FileText, PenLine, ShieldCheck } from "lucide-react";
+import { PanelCitas } from "./panel-citas";
 import type { Escrito } from "@/types";
 
 interface EscritoEditorProps {
@@ -29,6 +30,7 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [saveOk, setSaveOk] = useState(false);
+  const [showCitas, setShowCitas] = useState(false);
   const supabase = createClient();
 
   const wordCount = useMemo(
@@ -211,6 +213,19 @@ p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style>
           </button>
 
           <button
+            onClick={() => setShowCitas((v) => !v)}
+            title="Verificar citas legales contra el corpus"
+            className={`flex items-center gap-1.5 rounded border px-3 py-1.5 text-[11px] font-semibold transition-all ${
+              showCitas
+                ? "border-[var(--brand-gold)] bg-[var(--brand-gold)]/10 text-[var(--brand-navy)]"
+                : "border-border bg-white text-[var(--brand-ink-2)] hover:border-[var(--brand-gold)]"
+            }`}
+          >
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Citas
+          </button>
+
+          <button
             onClick={handleInsertSignature}
             title="Insertar firma del estudio"
             className="flex items-center gap-1.5 rounded border border-border bg-white px-3 py-1.5 text-[11px] font-semibold text-[var(--brand-ink-2)] hover:border-[var(--brand-gold)]"
@@ -268,7 +283,7 @@ p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style>
       </div>
 
       {/* Document area */}
-      <div className="flex flex-1 flex-col overflow-hidden bg-[var(--brand-paper)]">
+      <div className="flex flex-1 overflow-hidden bg-[var(--brand-paper)]">
         <Textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -281,6 +296,7 @@ p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style>
           `}
           spellCheck
         />
+        {showCitas && <PanelCitas texto={content} onClose={() => setShowCitas(false)} />}
       </div>
 
       {/* Status bar */}

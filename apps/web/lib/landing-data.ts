@@ -48,7 +48,7 @@ export const FEATURES: Feature[] = [
     iconColor: "text-blue-600",
     title: "Generador de escritos",
     description:
-      "Demandas laborales, cartas documento, contestaciones y recursos. Formato procesal argentino por jurisdicción — CABA, PBA y nacional.",
+      "Demandas laborales, cartas documento, contestaciones y recursos. Formato procesal argentino por jurisdicción — CABA, PBA y nacional. Cada cita legal se contrasta contra el corpus verificado.",
     tag: "Disponible",
   },
   {
@@ -81,14 +81,14 @@ export const PLANS: Plan[] = [
   {
     name: "Gratis",
     price: "$0",
-    period: "/mes",
-    description: "Para conocer la plataforma",
+    period: "/mes · para siempre",
+    description: "Sin tarjeta ni vencimiento",
     features: [
-      "3 escritos por mes",
+      "3 escritos por mes con citas verificadas",
       "20 consultas al asistente IA",
-      "Calculadoras legales",
-      "Exportar a Word",
-      "Soporte por email",
+      "Calculadoras legales ilimitadas",
+      "Anexo de liquidación auditable",
+      "Exportar a Word y PDF",
     ],
     cta: "Empezar gratis",
     href: "/register",
@@ -96,15 +96,15 @@ export const PLANS: Plan[] = [
   },
   {
     name: "Profesional",
-    price: "$12.000",
+    price: "$15.000",
     period: "/mes",
     description: "Para el abogado independiente",
     features: [
-      "30 escritos por mes",
+      "30 escritos por mes con citas verificadas",
       "Consultas IA ilimitadas",
-      "Calculadoras legales",
-      "Historial de escritos",
-      "Soporte prioritario",
+      "Estilo de redacción personalizado",
+      "Agenda de vencimientos con alertas",
+      "Historial y soporte prioritario",
     ],
     cta: "Elegir Profesional",
     href: "/register?plan=profesional",
@@ -112,13 +112,13 @@ export const PLANS: Plan[] = [
   },
   {
     name: "Estudio",
-    price: "$25.000",
+    price: "$30.000",
     period: "/mes",
     description: "Para estudios de hasta 5 personas",
     features: [
       "Escritos ilimitados",
       "Hasta 5 usuarios",
-      "Mini CRM de casos",
+      "Mini CRM de casos compartidos",
       "Exportación masiva",
       "Soporte dedicado",
     ],
@@ -130,7 +130,8 @@ export const PLANS: Plan[] = [
 
 export const TRUST_INDICATORS = [
   { text: "Datos cifrados en reposo" },
-  { text: "Cada cita es verificable" },
+  { text: "Citas verificadas contra el corpus legal" },
+  { text: "Liquidaciones auditables rubro por rubro" },
   { text: "Vos revisás antes de presentar" },
 ] as const;
 
