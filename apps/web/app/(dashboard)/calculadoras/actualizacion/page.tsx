@@ -5,48 +5,26 @@ import Link from "next/link";
 import { formatCurrency } from "@/lib/legal/calculadoras";
 
 const INDICES = [
-  { value: "ipc", label: "IPC (INDEC)" },
-  { value: "ripte", label: "RIPTE (MTEySS)" },
+  { value: "ipc", label: "IPC Nacional (INDEC)" },
+  { value: "ripte", label: "RIPTE (Secretaría de Trabajo)" },
   { value: "cer", label: "CER (BCRA)" },
-  { value: "ucai", label: "UCA inflacion (privado)" },
+  { value: "uva", label: "UVA (BCRA)" },
 ];
 
-const IPC_MENSUAL_EJEMPLO: Record<string, number> = {
-  "2024-01": 20.6, "2024-02": 13.2, "2024-03": 11.0, "2024-04": 8.8,
-  "2024-05": 4.2, "2024-06": 4.6, "2024-07": 4.0, "2024-08": 4.2,
-  "2024-09": 3.5, "2024-10": 2.7, "2024-11": 2.4, "2024-12": 2.7,
-  "2025-01": 2.2, "2025-02": 2.4, "2025-03": 3.7, "2025-04": 3.1,
-};
+interface ApiResult {
+  nombre: string;
+  fuente: string;
+  coeficiente: number;
+  valor_desde: number;
+  fecha_dato_desde: string;
+  valor_hasta: number;
+  fecha_dato_hasta: string;
+  dato_parcial: boolean;
+}
 
-function calcularActualizacion(params: {
-  capital: number;
-  fecha_desde: string;
-  fecha_hasta: string;
-  indice: string;
-}): { capital_original: number; coeficiente: number; capital_actualizado: number; variacion_porcentual: number; meses: number } {
-  const { capital, fecha_desde, fecha_hasta } = params;
-
-  const desde = new Date(fecha_desde);
-  const hasta = new Date(fecha_hasta);
-  const meses = (hasta.getFullYear() - desde.getFullYear()) * 12 + (hasta.getMonth() - desde.getMonth());
-
-  let coeficiente = 1;
-  const current = new Date(desde.getFullYear(), desde.getMonth(), 1);
-
-  for (let i = 0; i < meses; i++) {
-    const key = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}`;
-    const tasa = IPC_MENSUAL_EJEMPLO[key] ?? 3.0;
-    coeficiente *= (1 + tasa / 100);
-    current.setMonth(current.getMonth() + 1);
-  }
-
-  return {
-    capital_original: capital,
-    coeficiente,
-    capital_actualizado: capital * coeficiente,
-    variacion_porcentual: (coeficiente - 1) * 100,
-    meses,
-  };
+function fmtFecha(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
 }
 
 export default function ActualizacionPage() {
@@ -54,18 +32,32 @@ export default function ActualizacionPage() {
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const [indice, setIndice] = useState("ipc");
-  const [result, setResult] = useState<ReturnType<typeof calcularActualizacion> | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<ApiResult | null>(null);
 
-  function handleCalcular(e: React.FormEvent) {
+  async function handleCalcular(e: React.FormEvent) {
     e.preventDefault();
-    const r = calcularActualizacion({
-      capital: parseFloat(capital),
-      fecha_desde: fechaDesde,
-      fecha_hasta: fechaHasta,
-      indice,
-    });
-    setResult(r);
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetch(
+        `/api/indices?indice=${indice}&desde=${fechaDesde}&hasta=${fechaHasta}`,
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "No se pudo consultar la serie oficial.");
+      } else {
+        setResult(data as ApiResult);
+      }
+    } catch {
+      setError("No se pudo conectar con el servicio de índices.");
+    }
+    setLoading(false);
   }
+
+  const capitalNum = parseFloat(capital) || 0;
 
   return (
     <div className="bg-paper-rules min-h-screen">
@@ -79,12 +71,13 @@ export default function ActualizacionPage() {
 
       <div className="px-4 md:px-6 lg:px-10 py-4 md:py-6 lg:py-8">
         <header className="mb-8 pb-6 border-b border-[var(--brand-navy)]">
-          <div className="masthead-meta mb-2"><span>CALCULADORA IV</span></div>
+          <div className="masthead-meta mb-2"><span>CALCULADORA IV · DATOS OFICIALES EN VIVO</span></div>
           <h1 className="font-[var(--font-display)] text-[clamp(1.75rem,3.5vw,2.25rem)] font-semibold text-[var(--brand-navy)] tracking-[-0.03em]">
-            Actualizacion por IPC / RIPTE
+            Actualización por IPC / RIPTE / CER / UVA
           </h1>
-          <p className="mt-2 text-[14px] text-[var(--brand-ink-2)] max-w-[600px]">
-            Indexacion de creditos laborales utilizando indices oficiales. Util para actualizar montos de sentencia o liquidaciones diferidas.
+          <p className="mt-2 text-[14px] text-[var(--brand-ink-2)] max-w-[640px]">
+            Indexación con las series oficiales de INDEC, Secretaría de Trabajo y BCRA, consultadas en vivo
+            desde datos.gob.ar. Cada coeficiente muestra el valor del índice y la fecha exacta del dato.
           </p>
         </header>
 
@@ -104,7 +97,7 @@ export default function ActualizacionPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="t-overline text-[var(--brand-navy)] block">Indice de actualizacion *</label>
+              <label className="t-overline text-[var(--brand-navy)] block">Índice de actualización *</label>
               <select
                 value={indice}
                 onChange={(e) => setIndice(e.target.value)}
@@ -118,9 +111,9 @@ export default function ActualizacionPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="t-overline text-[var(--brand-navy)] block">Periodo desde *</label>
+                <label className="t-overline text-[var(--brand-navy)] block">Desde *</label>
                 <input
-                  type="month"
+                  type="date"
                   value={fechaDesde}
                   onChange={(e) => setFechaDesde(e.target.value)}
                   required
@@ -128,9 +121,9 @@ export default function ActualizacionPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="t-overline text-[var(--brand-navy)] block">Periodo hasta *</label>
+                <label className="t-overline text-[var(--brand-navy)] block">Hasta *</label>
                 <input
-                  type="month"
+                  type="date"
                   value={fechaHasta}
                   onChange={(e) => setFechaHasta(e.target.value)}
                   required
@@ -141,56 +134,81 @@ export default function ActualizacionPage() {
 
             <button
               type="submit"
-              className="w-full rounded bg-[var(--brand-navy)] px-4 py-3 text-[14px] font-semibold text-white hover:bg-[var(--brand-navy-2)]"
+              disabled={loading}
+              className="w-full rounded bg-[var(--brand-navy)] px-4 py-3 text-[14px] font-semibold text-white hover:bg-[var(--brand-navy-2)] disabled:opacity-60"
             >
-              Actualizar monto
+              {loading ? "Consultando serie oficial…" : "Actualizar monto"}
             </button>
+
+            {error && (
+              <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700">{error}</p>
+            )}
           </form>
 
           <div className="card-editorial p-6">
             {!result ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
                 <div className="font-[var(--font-display)] text-6xl italic text-[var(--brand-gold)] opacity-40 mb-4">IV</div>
-                <p className="text-[13px] text-[var(--brand-mute)]">Complete los datos y presione actualizar para ver el resultado.</p>
+                <p className="text-[13px] text-[var(--brand-mute)]">
+                  Complete los datos y presione actualizar. El coeficiente se calcula con la serie oficial en vivo.
+                </p>
               </div>
             ) : (
               <div>
-                <div className="masthead-meta mb-3"><span>RESULTADO</span></div>
+                <div className="masthead-meta mb-3"><span>RESULTADO · {result.fuente.toUpperCase()}</span></div>
                 <h3 className="font-[var(--font-display)] text-lg font-semibold text-[var(--brand-navy)] mb-4">
-                  Capital actualizado — {INDICES.find(i => i.value === indice)?.label}
+                  Capital actualizado — {result.nombre}
                 </h3>
 
                 <table className="w-full text-[13px]">
                   <tbody className="divide-y divide-border">
                     <tr>
                       <td className="py-2.5 text-[var(--brand-ink)]">Capital original</td>
-                      <td className="py-2.5 text-right font-mono text-[var(--brand-navy)] font-medium">{formatCurrency(result.capital_original)}</td>
+                      <td className="py-2.5 text-right font-mono text-[var(--brand-navy)] font-medium">{formatCurrency(capitalNum)}</td>
                     </tr>
                     <tr>
-                      <td className="py-2.5 text-[var(--brand-ink)]">Periodo</td>
-                      <td className="py-2.5 text-right font-mono text-[var(--brand-navy)] font-medium">{result.meses} meses</td>
+                      <td className="py-2.5">
+                        <span className="text-[var(--brand-ink)]">Índice al inicio</span>
+                        <span className="block text-[11px] text-[var(--brand-mute)]">dato del {fmtFecha(result.fecha_dato_desde)}</span>
+                      </td>
+                      <td className="py-2.5 text-right font-mono text-[var(--brand-navy)] font-medium">{result.valor_desde.toLocaleString("es-AR")}</td>
                     </tr>
                     <tr>
-                      <td className="py-2.5 text-[var(--brand-ink)]">Coeficiente de actualizacion</td>
+                      <td className="py-2.5">
+                        <span className="text-[var(--brand-ink)]">Índice al final</span>
+                        <span className="block text-[11px] text-[var(--brand-mute)]">dato del {fmtFecha(result.fecha_dato_hasta)}</span>
+                      </td>
+                      <td className="py-2.5 text-right font-mono text-[var(--brand-navy)] font-medium">{result.valor_hasta.toLocaleString("es-AR")}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2.5 text-[var(--brand-ink)]">Coeficiente (final / inicio)</td>
                       <td className="py-2.5 text-right font-mono text-[var(--brand-navy)] font-medium">{result.coeficiente.toFixed(4)}</td>
                     </tr>
                     <tr>
-                      <td className="py-2.5 text-[var(--brand-ink)]">Variacion acumulada</td>
-                      <td className="py-2.5 text-right font-mono text-[var(--brand-gold)] font-medium">+{result.variacion_porcentual.toFixed(1)}%</td>
+                      <td className="py-2.5 text-[var(--brand-ink)]">Variación acumulada</td>
+                      <td className="py-2.5 text-right font-mono text-[var(--brand-gold)] font-medium">+{((result.coeficiente - 1) * 100).toFixed(1)}%</td>
                     </tr>
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 border-[var(--brand-navy)]">
                       <td className="py-3 font-[var(--font-display)] font-semibold text-[var(--brand-navy)] text-[15px]">CAPITAL ACTUALIZADO</td>
                       <td className="py-3 text-right font-[var(--font-display)] font-semibold text-[var(--brand-navy)] text-[17px]">
-                        {formatCurrency(result.capital_actualizado)}
+                        {formatCurrency(capitalNum * result.coeficiente)}
                       </td>
                     </tr>
                   </tfoot>
                 </table>
 
+                {result.dato_parcial && (
+                  <div className="mt-4 rounded border border-amber-200 bg-amber-50 px-4 py-2.5 text-[12px] text-amber-800">
+                    El último dato oficial disponible es del {fmtFecha(result.fecha_dato_hasta)}, anterior a la
+                    fecha solicitada. El coeficiente llega hasta ese dato.
+                  </div>
+                )}
+
                 <div className="mt-6 p-4 rounded bg-[var(--brand-paper-2)] text-[11px] text-[var(--brand-mute)] leading-relaxed">
-                  <strong>Nota:</strong> Los indices utilizados son de referencia. Para periodos sin dato oficial se aplica un estimado del 3% mensual. Verificar con fuentes oficiales (INDEC, MTEySS, BCRA) para presentaciones judiciales.
+                  <strong>Fuente:</strong> {result.fuente} — serie oficial consultada en vivo. El detalle de valores
+                  y fechas de cada punto hace que esta actualización sea auditable en sede judicial.
                 </div>
               </div>
             )}

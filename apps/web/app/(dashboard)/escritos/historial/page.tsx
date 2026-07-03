@@ -1,9 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { FileText } from "lucide-react";
 import Link from "next/link";
-import { formatDate } from "@/lib/utils/formatters";
+import { HistorialList, type EscritoRow } from "@/components/escritos/historial-list";
 
 export default async function HistorialPage() {
   const supabase = await createClient();
@@ -11,7 +10,7 @@ export default async function HistorialPage() {
     .from("escritos")
     .select("id, titulo, tipo, fuero, jurisdiccion, created_at")
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(200);
 
   return (
     <div className="space-y-6">
@@ -35,26 +34,7 @@ export default async function HistorialPage() {
           </CardHeader>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {escritos.map((escrito) => (
-            <Link key={escrito.id} href={`/escritos/${escrito.id}`}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardHeader className="py-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{escrito.titulo}</CardTitle>
-                    <span className="text-sm text-slate-500">
-                      {formatDate(escrito.created_at)}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Badge variant="secondary">{escrito.fuero}</Badge>
-                    <Badge variant="outline">{escrito.jurisdiccion}</Badge>
-                  </div>
-                </CardHeader>
-              </Card>
-            </Link>
-          ))}
-        </div>
+        <HistorialList escritos={escritos as EscritoRow[]} />
       )}
     </div>
   );

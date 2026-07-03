@@ -16,17 +16,24 @@ const TASAS = [
 export default function InteresesPage() {
   const [capital, setCapital] = useState("");
   const [tasaSeleccionada, setTasaSeleccionada] = useState(TASAS[0].value);
-  const [tasaCustom, setTasaCustom] = useState("");
+  const [tasaCustom, setTasaCustom] = useState(String(TASAS[0].value));
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const [result, setResult] = useState<{ dias: number; intereses: number; total: number; tasa_diaria: number } | null>(null);
 
+  function handleSelectTasa(value: number) {
+    setTasaSeleccionada(value);
+    // La tasa de referencia precarga el campo, pero SIEMPRE es editable:
+    // el abogado debe poder cargar la tasa vigente exacta del período.
+    if (value !== 0) setTasaCustom(String(value));
+    else setTasaCustom("");
+  }
+
   function handleCalcular(e: React.FormEvent) {
     e.preventDefault();
-    const tasa = tasaSeleccionada === 0 ? parseFloat(tasaCustom) : tasaSeleccionada;
     const r = calcularIntereses({
       capital: parseFloat(capital),
-      tasa_anual: tasa,
+      tasa_anual: parseFloat(tasaCustom),
       fecha_desde: fechaDesde,
       fecha_hasta: fechaHasta,
     });
@@ -73,24 +80,29 @@ export default function InteresesPage() {
               <label className="t-overline text-[var(--brand-navy)] block">Tasa de interes *</label>
               <select
                 value={tasaSeleccionada}
-                onChange={(e) => setTasaSeleccionada(Number(e.target.value))}
+                onChange={(e) => handleSelectTasa(Number(e.target.value))}
                 className="w-full rounded border border-border bg-white px-3 py-2.5 text-[13px] focus:border-[var(--brand-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold-pale)]"
               >
                 {TASAS.map((t) => (
-                  <option key={t.label} value={t.value}>{t.label} ({t.value}% anual)</option>
+                  <option key={t.label} value={t.value}>
+                    {t.label}{t.value > 0 ? ` (ref. ${t.value}% anual)` : ""}
+                  </option>
                 ))}
               </select>
-              {tasaSeleccionada === 0 && (
-                <input
-                  type="number"
-                  value={tasaCustom}
-                  onChange={(e) => setTasaCustom(e.target.value)}
-                  required
-                  step="0.01"
-                  placeholder="Tasa anual %"
-                  className="mt-2 w-full rounded border border-border bg-white px-3 py-2.5 text-[13px] focus:border-[var(--brand-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold-pale)]"
-                />
-              )}
+              <input
+                type="number"
+                value={tasaCustom}
+                onChange={(e) => setTasaCustom(e.target.value)}
+                required
+                step="0.01"
+                placeholder="Tasa anual % (editable)"
+                className="mt-2 w-full rounded border border-border bg-white px-3 py-2.5 text-[13px] focus:border-[var(--brand-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold-pale)]"
+              />
+              <p className="text-[11px] text-[var(--brand-mute)]">
+                Los valores del listado son de <strong>referencia</strong> y pueden estar desactualizados: la tasa
+                activa BNA no tiene API pública. Editá el campo con la tasa vigente exacta (bna.com.ar / actas CNAT)
+                antes de usar el cálculo en una liquidación.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

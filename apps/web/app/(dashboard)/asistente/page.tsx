@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Send, ThumbsUp, ThumbsDown } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { CitasChat } from "@/components/chat/citas-chat";
 
 interface Message {
   role: "user" | "assistant";
@@ -22,7 +24,32 @@ export default function AsistentePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // CHAT PERSISTENTE: al entrar se recuperan las últimas consultas guardadas,
+  // así la conversación no se pierde al refrescar o cambiar de página.
+  useEffect(() => {
+    async function loadHistory() {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("consultas_ia")
+        .select("pregunta, respuesta")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (data && data.length > 0) {
+        const historial: Message[] = [...data]
+          .reverse()
+          .flatMap((c) => [
+            { role: "user" as const, content: c.pregunta },
+            { role: "assistant" as const, content: c.respuesta },
+          ]);
+        setMessages((prev) => (prev.length === 0 ? historial : prev));
+      }
+      setHistoryLoaded(true);
+    }
+    loadHistory();
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -116,7 +143,7 @@ export default function AsistentePage() {
 
           {/* Body */}
           <div className="flex-1 overflow-y-auto bg-[var(--brand-paper)] px-6 py-6">
-            {messages.length === 0 && (
+            {messages.length === 0 && historyLoaded && (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--brand-navy)] font-serif text-3xl italic text-[var(--brand-gold)]">§</div>
                 <h2 className="font-serif text-2xl font-semibold text-[var(--brand-navy)] tracking-[-0.01em] mb-2">
@@ -147,6 +174,9 @@ export default function AsistentePage() {
                     : "bg-white border-border text-[var(--brand-ink)]"
                 }`}>
                   <div className="whitespace-pre-wrap">{msg.content}</div>
+                  {msg.role === "assistant" && msg.content && !loading && (
+                    <CitasChat texto={msg.content} />
+                  )}
                   {msg.role === "assistant" && msg.content && (
                     <div className="mt-2.5 pt-2 border-t border-dashed border-border flex items-center gap-1.5 text-[10px] text-[var(--brand-mute)]">
                       <span>¿Fue util?</span>

@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, FolderOpen, Search } from "lucide-react";
+import { CasoTimeline } from "./caso-timeline";
 
 const FUERO_COLORS: Record<string, string> = {
   laboral: "bg-blue-50 text-blue-700",
@@ -225,7 +226,10 @@ export function CasosClient({ initialCasos }: CasosClientProps) {
           </SheetHeader>
           {sheetCaso && (
             <ScrollArea className="flex-1 px-4">
-              <CasoForm caso={sheetCaso} onSubmit={handleUpdate} saving={saving} orgId={orgId} />
+              <CasoTimeline casoId={sheetCaso.id} />
+              <div className="mt-4">
+                <CasoForm caso={sheetCaso} onSubmit={handleUpdate} saving={saving} orgId={orgId} />
+              </div>
             </ScrollArea>
           )}
         </SheetContent>

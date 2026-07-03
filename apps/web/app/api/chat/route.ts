@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { buildChatSystemPrompt } from "@/lib/ai/prompts/base-legal";
 import { streamWithFallback, providerChatModelName } from "@/lib/ai/provider";
 import { buildRagContext, buildCaseContext } from "@/lib/legal/rag";
+import { buildSemanticContext, type FuenteRag } from "@/lib/legal/rag-semantic";
 import { wrapUserMessage } from "@/lib/ai/sanitize";
 import { checkIpRateLimit, getClientIp } from "@/lib/rate-limit";
 
@@ -57,7 +58,16 @@ export async function POST(request: Request) {
   }
 
   try {
-    const ragContext = buildRagContext(message);
+    // RAG semántico (pgvector + embeddings) con fallback al corpus por keywords.
+    let ragContext: string;
+    let fuentesRag: FuenteRag[] = [];
+    const semantic = admin ? await buildSemanticContext(admin, message) : null;
+    if (semantic) {
+      ragContext = semantic.contexto;
+      fuentesRag = semantic.fuentes;
+    } else {
+      ragContext = buildRagContext(message);
+    }
 
     const { data: casos } = await supabase
       .from("casos")
@@ -103,6 +113,7 @@ export async function POST(request: Request) {
             user_id: user.id,
             pregunta: message,
             respuesta: collectResponse(),
+            fuentes_citadas: fuentesRag.length > 0 ? fuentesRag : null,
             modelo_usado: providerChatModelName(provider),
           });
         }

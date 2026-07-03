@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
-import { Copy, Download, Save, Check, AlignJustify, FileText, PenLine, ShieldCheck } from "lucide-react";
+import { Copy, Download, Save, Check, AlignJustify, FileText, PenLine, ShieldCheck, History } from "lucide-react";
 import { PanelCitas } from "./panel-citas";
+import { PanelVersiones } from "./panel-versiones";
+import { CasoSelector } from "./caso-selector";
 import type { Escrito } from "@/types";
 
 interface EscritoEditorProps {
@@ -31,6 +33,10 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
   const [copied, setCopied] = useState(false);
   const [saveOk, setSaveOk] = useState(false);
   const [showCitas, setShowCitas] = useState(false);
+  const [showVersiones, setShowVersiones] = useState(false);
+  const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
+  const lastSavedContent = useRef(content);
+  const lastVersionAt = useRef(0);
   const supabase = createClient();
 
   const wordCount = useMemo(
@@ -40,6 +46,39 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
 
   const charCount = content.length;
 
+  /** Snapshot en el historial de versiones (manual o automático). */
+  const saveVersion = useCallback(async (contenido: string, origen: "manual" | "auto") => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("escritos_versiones").insert({
+      escrito_id: escrito.id,
+      user_id: user.id,
+      contenido,
+      origen,
+    });
+    lastVersionAt.current = Date.now();
+  }, [escrito.id, supabase]);
+
+  // AUTOSAVE: guarda 2,5 s después de la última tecla. Nunca perdés una edición.
+  useEffect(() => {
+    if (content === lastSavedContent.current) return;
+    const timer = setTimeout(async () => {
+      const { error } = await supabase
+        .from("escritos")
+        .update({ contenido_editado: content })
+        .eq("id", escrito.id);
+      if (!error) {
+        lastSavedContent.current = content;
+        setAutoSavedAt(new Date());
+        // Versión automática como máximo cada 5 minutos.
+        if (Date.now() - lastVersionAt.current > 5 * 60 * 1000) {
+          await saveVersion(content, "auto");
+        }
+      }
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [content, escrito.id, supabase, saveVersion]);
+
   async function handleSave() {
     setSaving(true);
     setSaveOk(false);
@@ -47,6 +86,8 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
       .from("escritos")
       .update({ contenido_editado: content })
       .eq("id", escrito.id);
+    lastSavedContent.current = content;
+    await saveVersion(content, "manual");
     setSaving(false);
     setSaveOk(true);
     setTimeout(() => setSaveOk(false), 2500);
@@ -213,7 +254,7 @@ p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style>
           </button>
 
           <button
-            onClick={() => setShowCitas((v) => !v)}
+            onClick={() => { setShowCitas((v) => !v); setShowVersiones(false); }}
             title="Verificar citas legales contra el corpus"
             className={`flex items-center gap-1.5 rounded border px-3 py-1.5 text-[11px] font-semibold transition-all ${
               showCitas
@@ -223,6 +264,19 @@ p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style>
           >
             <ShieldCheck className="h-3.5 w-3.5" />
             Citas
+          </button>
+
+          <button
+            onClick={() => { setShowVersiones((v) => !v); setShowCitas(false); }}
+            title="Historial de versiones"
+            className={`flex items-center gap-1.5 rounded border px-3 py-1.5 text-[11px] font-semibold transition-all ${
+              showVersiones
+                ? "border-[var(--brand-gold)] bg-[var(--brand-gold)]/10 text-[var(--brand-navy)]"
+                : "border-border bg-white text-[var(--brand-ink-2)] hover:border-[var(--brand-gold)]"
+            }`}
+          >
+            <History className="h-3.5 w-3.5" />
+            Versiones
           </button>
 
           <button
@@ -297,6 +351,13 @@ p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style>
           spellCheck
         />
         {showCitas && <PanelCitas texto={content} onClose={() => setShowCitas(false)} />}
+        {showVersiones && (
+          <PanelVersiones
+            escritoId={escrito.id}
+            onRestore={(c) => setContent(c)}
+            onClose={() => setShowVersiones(false)}
+          />
+        )}
       </div>
 
       {/* Status bar */}
@@ -308,9 +369,23 @@ p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style>
           </span>
           <span className="opacity-40">·</span>
           <span>{charCount.toLocaleString("es-AR")} caracteres</span>
+          {autoSavedAt && (
+            <>
+              <span className="opacity-40">·</span>
+              <span className="text-emerald-700">
+                Auto-guardado {autoSavedAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            </>
+          )}
         </div>
-        <div className="font-mono text-[10px] text-[var(--brand-mute)]">
-          Times New Roman 12pt · A4 · Interlineado doble
+        <div className="flex items-center gap-3">
+          <CasoSelector
+            escritoId={escrito.id}
+            initialCasoId={(escrito as { caso_id?: string | null }).caso_id ?? null}
+          />
+          <div className="font-mono text-[10px] text-[var(--brand-mute)]">
+            Times New Roman 12pt · A4
+          </div>
         </div>
       </div>
     </div>
