@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Copy, Download, Save, Check, AlignJustify, FileText, PenLine, ShieldCheck, History } from "lucide-react";
 import { PanelCitas } from "./panel-citas";
 import { PanelVersiones } from "./panel-versiones";
+import { PanelChecklist } from "./panel-checklist";
 import { CasoSelector } from "./caso-selector";
 import type { Escrito } from "@/types";
 
@@ -34,6 +35,7 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
   const [saveOk, setSaveOk] = useState(false);
   const [showCitas, setShowCitas] = useState(false);
   const [showVersiones, setShowVersiones] = useState(false);
+  const [showControl, setShowControl] = useState(false);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
   const lastSavedContent = useRef(content);
   const lastVersionAt = useRef(0);
@@ -254,7 +256,7 @@ p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style>
           </button>
 
           <button
-            onClick={() => { setShowCitas((v) => !v); setShowVersiones(false); }}
+            onClick={() => { setShowCitas((v) => !v); setShowVersiones(false); setShowControl(false); }}
             title="Verificar citas legales contra el corpus"
             className={`flex items-center gap-1.5 rounded border px-3 py-1.5 text-[11px] font-semibold transition-all ${
               showCitas
@@ -267,7 +269,7 @@ p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style>
           </button>
 
           <button
-            onClick={() => { setShowVersiones((v) => !v); setShowCitas(false); }}
+            onClick={() => { setShowVersiones((v) => !v); setShowCitas(false); setShowControl(false); }}
             title="Historial de versiones"
             className={`flex items-center gap-1.5 rounded border px-3 py-1.5 text-[11px] font-semibold transition-all ${
               showVersiones
@@ -277,6 +279,19 @@ p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style>
           >
             <History className="h-3.5 w-3.5" />
             Versiones
+          </button>
+
+          <button
+            onClick={() => { setShowControl((v) => !v); setShowCitas(false); setShowVersiones(false); }}
+            title="Control pre-presentación: checklist procesal por jurisdicción"
+            className={`flex items-center gap-1.5 rounded border px-3 py-1.5 text-[11px] font-semibold transition-all ${
+              showControl
+                ? "border-[var(--brand-gold)] bg-[var(--brand-gold)]/10 text-[var(--brand-navy)]"
+                : "border-border bg-white text-[var(--brand-ink-2)] hover:border-[var(--brand-gold)]"
+            }`}
+          >
+            <Check className="h-3.5 w-3.5" />
+            Control
           </button>
 
           <button
@@ -356,6 +371,15 @@ p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style>
             escritoId={escrito.id}
             onRestore={(c) => setContent(c)}
             onClose={() => setShowVersiones(false)}
+          />
+        )}
+        {showControl && (
+          <PanelChecklist
+            texto={content}
+            tipo={escrito.tipo}
+            fuero={escrito.fuero}
+            jurisdiccion={escrito.jurisdiccion}
+            onClose={() => setShowControl(false)}
           />
         )}
       </div>

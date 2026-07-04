@@ -38,3 +38,8 @@
 ## Siguiente tanda sugerida (de PROPUESTA-FASE-2.md)
 
 RAG con ley completa (requiere OPENAI_API_KEY) · checklist pre-presentación por jurisdicción (PBA 15.057 vs CABA 18.345) · wizard de comunicaciones laborales con plazos automáticos · modo cliente · onboarding con demo.
+
+## Agregado 04/07 — Control pre-presentación + Wizard de telegramas
+
+- **Control pre-presentación** (`lib/legal/checklist.ts` + botón "Control" en el editor): checklist procesal determinístico por tipo de escrito y jurisdicción — estructura (objeto/hechos/derecho/petitorio), prueba ofrecida, liquidación e intereses, reserva del caso federal, datos de las partes, y controles cruzados de régimen procesal (detecta ley 15.057 en escritos CABA y ley 18.345/CNAT en escritos PBA; recuerda el SECLO en CABA). Costo cero (sin IA). Lógica validada por ejecución.
+- **Wizard de telegramas laborales** (`/escritos/telegramas`, `lib/legal/telegramas.ts`, link "Telegramas" en el sidebar): secuencia guiada del despido indirecto — intimación de registración (24.013), intimación de pago, aclaración de situación, despido indirecto — cada paso con su base legal, texto listo para copiar y botón que agenda el plazo del paso siguiente en la Agenda (con alerta por email). Cierra el loop telegrama → plazo → cálculo → demanda.
