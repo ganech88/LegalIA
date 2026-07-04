@@ -114,13 +114,13 @@ export default function LoginPage() {
         <blockquote className="max-w-[500px]">
           <div className="font-[var(--font-display)] text-6xl font-semibold text-[var(--brand-gold)] italic leading-none mb-4">&ldquo;</div>
           <p className="font-[var(--font-serif)] text-2xl font-medium text-[var(--brand-navy)] leading-tight tracking-[-0.01em]">
-            Ahorro 4 horas por semana en redaccion de escritos, sin perder rigor tecnico.
+            Cada cita verificada contra el corpus legal. Cada liquidación auditable rubro por rubro.
           </p>
           <footer className="mt-6 flex items-center gap-3">
             <div className="h-px w-8 bg-[var(--brand-gold)]" />
             <div>
-              <div className="text-[13px] font-semibold text-[var(--brand-navy)]">Dra. Maria Salerno</div>
-              <div className="text-[11px] text-[var(--brand-mute)] font-mono">CPACF · Laboralista</div>
+              <div className="text-[13px] font-semibold text-[var(--brand-navy)]">LegalIA</div>
+              <div className="text-[11px] text-[var(--brand-mute)] font-mono">Vos la firmás. Nosotros te mostramos por qué es correcta.</div>
             </div>
           </footer>
         </blockquote>

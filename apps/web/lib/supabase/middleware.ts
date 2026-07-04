@@ -37,6 +37,8 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isPublic =
     path === "/" ||
+    path === "/robots.txt" ||
+    path === "/sitemap.xml" ||
     path === "/terminos" ||
     path === "/privacidad" ||
     path.startsWith("/herramientas") || // calculadoras públicas (SEO / adquisición)

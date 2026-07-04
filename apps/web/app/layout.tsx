@@ -36,6 +36,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://www.legaliapp.com"),
   title: "LegalIA — Asistente IA para Abogados Argentinos",
   description:
     "Generador de escritos judiciales y asistente legal con inteligencia artificial. Especializado en derecho argentino.",
