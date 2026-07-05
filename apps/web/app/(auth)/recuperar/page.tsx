@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { PoweredBy } from "@/components/layout/powered-by";
 
 export default function RecuperarPage() {
   const [email, setEmail] = useState("");
@@ -90,6 +91,9 @@ export default function RecuperarPage() {
             </div>
           </>
         )}
+        <div className="mt-10">
+          <PoweredBy />
+        </div>
       </div>
     </div>
   );

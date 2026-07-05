@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CalcIndemnizacionPublica } from "@/components/calculadoras/calc-indemnizacion-publica";
+import { PoweredBy } from "@/components/layout/powered-by";
 
 export const metadata: Metadata = {
   title: "Calculadora de indemnización por despido 2026 (art. 245 LCT) — Gratis | LegalIA",
@@ -85,6 +86,9 @@ export default function IndemnizacionDespidoPage() {
           LegalIA es una herramienta de asistencia profesional. El cálculo es orientativo y no constituye asesoramiento
           legal; el profesional debe verificar normativa y jurisprudencia vigentes antes de presentar.
         </p>
+        <div className="mt-4 flex justify-center">
+          <PoweredBy />
+        </div>
       </main>
     </div>
   );

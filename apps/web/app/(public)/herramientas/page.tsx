@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PoweredBy } from "@/components/layout/powered-by";
 
 export const metadata: Metadata = {
   title: "Herramientas gratis para abogados argentinos — Calculadoras legales | LegalIA",
@@ -75,6 +76,11 @@ export default function HerramientasPage() {
             </Link>
           ))}
         </div>
+
+        <footer className="mt-14 flex items-center justify-between border-t border-border pt-6">
+          <PoweredBy />
+          <p className="text-[11px] text-[var(--brand-mute)]">LegalIA · herramientas para abogados argentinos</p>
+        </footer>
       </main>
     </div>
   );

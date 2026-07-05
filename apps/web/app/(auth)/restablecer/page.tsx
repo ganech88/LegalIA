@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { PoweredBy } from "@/components/layout/powered-by";
 
 export default function RestablecerPage() {
   const [password, setPassword] = useState("");
@@ -118,6 +119,9 @@ export default function RestablecerPage() {
             </form>
           </>
         )}
+        <div className="mt-10">
+          <PoweredBy />
+        </div>
       </div>
     </div>
   );

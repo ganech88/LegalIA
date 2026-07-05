@@ -305,7 +305,13 @@ export function DashboardClient({
       {/* Footer */}
       <footer className="border-t border-border bg-[var(--brand-paper-2)] px-4 md:px-6 lg:px-10 py-4">
         <div className="flex flex-col md:flex-row justify-between gap-2 text-[11px] text-[var(--brand-mute)]">
-          <span><strong className="text-[var(--brand-navy)]">LegalIA</strong> v2.4.1 · Desarrollo sin Fronteras · 2026</span>
+          <span>
+            <strong className="text-[var(--brand-navy)]">LegalIA</strong> v2.4.1 ·{" "}
+            <a href="https://desarrollosinfronteras.com" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-[var(--brand-navy)]">
+              Desarrollo sin Fronteras
+            </a>{" "}
+            · 2026
+          </span>
           <span>Corpus legal: <strong>LCT</strong> · <strong>CCCN</strong> · <strong>CPCCN</strong> · Fallos <strong>CSJN/CNAT/SCBA</strong></span>
         </div>
       </footer>

@@ -216,7 +216,13 @@ export default function HomePage() {
             </div>
           </div>
           <div className="mt-8 pt-6 border-t border-white/10 flex flex-col md:flex-row justify-between gap-4 text-[11px] text-white/40">
-            <p>© 2026 Desarrollo sin Fronteras. Todos los derechos reservados.</p>
+            <p>
+              © 2026{" "}
+              <a href="https://desarrollosinfronteras.com" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-[var(--brand-navy)]">
+                Desarrollo sin Fronteras
+              </a>
+              . Todos los derechos reservados.
+            </p>
             <p>LegalIA es una herramienta de asistencia. El abogado es responsable de revisar todo contenido generado.</p>
           </div>
         </div>

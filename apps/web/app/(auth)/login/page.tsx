@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { PoweredBy } from "@/components/layout/powered-by";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -100,8 +101,9 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="text-[11px] text-[var(--brand-mute)]">
-          © 2026 Desarrollo sin Fronteras
+        <div className="flex items-center gap-2 text-[11px] text-[var(--brand-mute)]">
+          <span>© 2026</span>
+          <PoweredBy />
         </div>
       </div>
 
