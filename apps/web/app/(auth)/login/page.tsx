@@ -95,7 +95,7 @@ export default function LoginPage() {
             </button>
           </form>
           <div className="mt-4 flex justify-between text-[12px]">
-            <span className="text-[var(--brand-mute)]">¿Olvidaste tu contraseña?</span>
+            <Link href="/recuperar" className="text-[var(--brand-mute)] hover:text-[var(--brand-navy)] underline underline-offset-2">¿Olvidaste tu contraseña?</Link>
             <Link href="/register" className="text-[var(--brand-navy)] border-b border-[var(--brand-gold)] pb-px">Crear cuenta →</Link>
           </div>
         </div>

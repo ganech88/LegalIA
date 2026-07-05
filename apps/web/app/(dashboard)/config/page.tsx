@@ -22,6 +22,10 @@ export default function ConfigPage() {
   const [jurisdiccion, setJurisdiccion] = useState<Jurisdiccion | "">("");
   const [estudioNombre, setEstudioNombre] = useState("");
   const [estiloRedaccion, setEstiloRedaccion] = useState("");
+  const [pwdNueva, setPwdNueva] = useState("");
+  const [pwdConfirmar, setPwdConfirmar] = useState("");
+  const [pwdMsg, setPwdMsg] = useState<{ ok: boolean; texto: string } | null>(null);
+  const [pwdSaving, setPwdSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -108,6 +112,34 @@ export default function ConfigPage() {
       setTimeout(() => setSaved(false), 3000);
     }
     setSaving(false);
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setPwdMsg(null);
+    if (pwdNueva.length < 8) {
+      setPwdMsg({ ok: false, texto: "La contraseña debe tener al menos 8 caracteres." });
+      return;
+    }
+    if (pwdNueva !== pwdConfirmar) {
+      setPwdMsg({ ok: false, texto: "Las contraseñas no coinciden." });
+      return;
+    }
+    setPwdSaving(true);
+    const { error: pwdError } = await supabase.auth.updateUser({ password: pwdNueva });
+    if (pwdError) {
+      setPwdMsg({
+        ok: false,
+        texto: pwdError.message.includes("different from the old")
+          ? "La contraseña nueva debe ser distinta a la actual."
+          : "No se pudo actualizar la contraseña. Intentá de nuevo.",
+      });
+    } else {
+      setPwdMsg({ ok: true, texto: "✓ Contraseña actualizada." });
+      setPwdNueva("");
+      setPwdConfirmar("");
+    }
+    setPwdSaving(false);
   }
 
   async function handleLogout() {
@@ -284,6 +316,45 @@ export default function ConfigPage() {
             className="w-full rounded border border-border bg-white px-3 py-2.5 text-[13px] focus:border-[var(--brand-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold-pale)]"
           />
           <p className="mt-1 text-right text-[10px] text-[var(--brand-mute)]">{estiloRedaccion.length}/1500</p>
+        </section>
+
+        {/* Cambio de contraseña */}
+        <section className="card-editorial p-6 mb-6">
+          <div className="t-overline text-[var(--brand-gold)] mb-4">CONTRASEÑA</div>
+          <form onSubmit={handleChangePassword} className="space-y-4 max-w-[400px]">
+            <label className="block">
+              <span className="t-overline text-[var(--brand-navy)] block mb-1.5">Contraseña nueva</span>
+              <input
+                type="password"
+                value={pwdNueva}
+                onChange={e => setPwdNueva(e.target.value)}
+                minLength={8}
+                placeholder="Mínimo 8 caracteres"
+                className="w-full rounded border border-border bg-white px-3 py-2.5 text-[13px] focus:border-[var(--brand-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold-pale)]"
+              />
+            </label>
+            <label className="block">
+              <span className="t-overline text-[var(--brand-navy)] block mb-1.5">Repetir contraseña</span>
+              <input
+                type="password"
+                value={pwdConfirmar}
+                onChange={e => setPwdConfirmar(e.target.value)}
+                minLength={8}
+                placeholder="••••••••"
+                className="w-full rounded border border-border bg-white px-3 py-2.5 text-[13px] focus:border-[var(--brand-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold-pale)]"
+              />
+            </label>
+            {pwdMsg && (
+              <p className={`text-[12px] ${pwdMsg.ok ? "text-emerald-700" : "text-[var(--brand-red)]"}`}>{pwdMsg.texto}</p>
+            )}
+            <button
+              type="submit"
+              disabled={pwdSaving || !pwdNueva}
+              className="rounded bg-[var(--brand-navy)] px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[var(--brand-navy-2)] disabled:opacity-60"
+            >
+              {pwdSaving ? "Guardando…" : "Cambiar contraseña"}
+            </button>
+          </form>
         </section>
 
         {/* Specialties */}

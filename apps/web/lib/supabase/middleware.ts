@@ -37,6 +37,8 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isPublic =
     path === "/" ||
+    path === "/recuperar" ||
+    path === "/restablecer" || // llega con code del email; el callback crea la sesión
     path === "/robots.txt" ||
     path === "/sitemap.xml" ||
     path === "/terminos" ||
