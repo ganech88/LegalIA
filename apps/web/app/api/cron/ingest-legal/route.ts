@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { embeddingsDisponibles } from "@/lib/ai/embeddings";
-import { chunksFromCorpus, chunksFromInfolegLCT, ingestChunks } from "@/lib/legal/ingest";
+import { chunksFromCorpus, chunksFromInfolegLCT, chunksFromInfolegCCCN, CCCN_TOTAL_ARTICULOS, ingestChunks } from "@/lib/legal/ingest";
 
 /**
  * Ingestión de la base RAG (legal_knowledge, pgvector).
@@ -33,6 +33,31 @@ export async function GET(request: Request) {
   }
 
   const resultado: Record<string, unknown> = {};
+
+  // Modo tramo CCCN: ?fuente=cccn&desde=1&hasta=700 (el código completo tiene
+  // 2.671 artículos y no entra en una invocación de 60s: se ingesta en tramos
+  // idempotentes, borrando/insertando solo los artículos del tramo).
+  const { searchParams } = new URL(request.url);
+  if (searchParams.get("fuente") === "cccn") {
+    const desde = Math.max(1, parseInt(searchParams.get("desde") ?? "1", 10) || 1);
+    const hasta = Math.min(CCCN_TOTAL_ARTICULOS, parseInt(searchParams.get("hasta") ?? "700", 10) || 700);
+    try {
+      const { chunks, parseInfo } = await chunksFromInfolegCCCN(desde, hasta);
+      resultado.cccn_info = parseInfo;
+      if (chunks.length === 0) {
+        resultado.cccn_omitido = "El parseo no devolvió artículos en el tramo: revisar formato de InfoLeg.";
+      } else {
+        resultado.cccn_ingestado = await ingestChunks(admin, chunks, { deleteBy: "article" });
+      }
+    } catch (e) {
+      resultado.cccn_error = e instanceof Error ? e.message : String(e);
+    }
+    const { count } = await admin
+      .from("legal_knowledge")
+      .select("id", { count: "exact", head: true });
+    resultado.total_filas_legal_knowledge = count;
+    return NextResponse.json(resultado);
+  }
 
   // 1) Corpus curado (garantizado).
   try {
