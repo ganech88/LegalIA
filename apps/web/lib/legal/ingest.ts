@@ -223,11 +223,15 @@ export async function chunksFromInfolegCCCN(
   // no se corrige primero). El vecino superior sale de la caminata original:
   // un robo solo corre idx a la derecha, y elegir la PRIMERA ocurrencia del
   // rango tolera un límite derecho holgado.
+  // Límite izquierdo global: la posición del primer artículo aceptado por la
+  // caminata (el art. 1 del código). Sin esto, la recuperación de n=1..12 se
+  // roba los artículos de la ley aprobatoria, que están ANTES del código.
+  const inicioCodigo = codigo[0].idx;
   let lower: Occ | null = null;
   let upperPtr = 0;
   for (let n = 1; n <= maxN; n++) {
     while (upperPtr < walkOrdenado.length && walkOrdenado[upperPtr].n <= n) upperPtr++;
-    const desdeIdx = lower ? lower.idx : -1;
+    const desdeIdx = lower ? lower.idx : inicioCodigo - 1;
     const hastaIdx = upperPtr < walkOrdenado.length ? walkOrdenado[upperPtr].idx : Number.MAX_SAFE_INTEGER;
     const candidato = occs.find((o) => o.n === n && o.idx > desdeIdx && o.idx < hastaIdx);
     if (candidato) porN.set(n, candidato); // primera ocurrencia del rango = artículo real
