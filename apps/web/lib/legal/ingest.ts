@@ -188,12 +188,21 @@ export async function chunksFromInfolegCCCN(
   if (fin < 0) {
     return { chunks: [], parseInfo: `CCCN InfoLeg: no se encontró el art. ${CCCN_TOTAL_ARTICULOS}; formato de página inesperado.` };
   }
+  // Caminata hacia atrás con tolerancia: aceptamos la ocurrencia si desciende
+  // de a poco (gap ≤ 50, por artículos derogados o variantes bis/ter); las que
+  // rompen el descenso (citas en notas, fe de erratas, otros bloques) se
+  // SALTEAN en lugar de cortar la caminata.
   const codigo: Occ[] = [occs[fin]];
+  let salteadas = 0;
   for (let i = fin - 1; i >= 0; i--) {
     const ultimo = codigo[codigo.length - 1];
-    if (occs[i].n > ultimo.n) break; // se rompió el descenso: salimos del código
-    codigo.push(occs[i]);
-    if (occs[i].n === 1) break; // llegamos al art. 1 del código
+    const n = occs[i].n;
+    if (n <= ultimo.n && n >= ultimo.n - 50) {
+      codigo.push(occs[i]);
+      if (n === 1) break; // llegamos al art. 1 del código
+    } else {
+      salteadas++;
+    }
   }
   codigo.reverse();
 
@@ -218,7 +227,7 @@ export async function chunksFromInfolegCCCN(
     });
   }
 
-  const parseInfo = `CCCN InfoLeg tramo ${desde}-${hasta}: ${chunks.length} artículos parseados`;
+  const parseInfo = `CCCN InfoLeg tramo ${desde}-${hasta}: ${chunks.length} artículos parseados (código delimitado: ${codigo.length} arts, ${salteadas} ocurrencias salteadas, ${occs.length} totales en página)`;
   return { chunks, parseInfo };
 }
 
