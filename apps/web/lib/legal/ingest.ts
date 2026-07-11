@@ -163,38 +163,60 @@ export async function chunksFromInfolegCCCN(
 
   const partes = texto.split(/(?=(?:Art\.|ART[IÍ]CULO)\s*\d+\s*(?:bis|ter|quater)?\s*[°º]?\s*[.\-—–])/gi);
 
-  // La ley aprobatoria 26.994 tiene sus propios arts. 1-11 ANTES del anexo con
-  // el código (y el corte por TITULO PRELIMINAR no es confiable en la página
-  // real). Ante números duplicados gana la ÚLTIMA aparición: el código viene
-  // después de la ley, así que sus artículos pisan a los de la aprobatoria.
-  const porNumero = new Map<string, ChunkLegal>();
+  // La página trae TRES bloques con numeración propia: la ley aprobatoria
+  // 26.994 (arts. 1-12, ANTES del código), el código (arts. 1-2671) y el
+  // Anexo II con leyes modificadas (24.240, 19.550..., DESPUÉS del código,
+  // también arrancando en 1). Ni "primera aparición" ni "última aparición"
+  // sirven. Delimitación robusta: el art. 2671 solo existe en el código;
+  // desde su PRIMERA aparición caminamos hacia atrás mientras la numeración
+  // descienda — esa secuencia decreciente es exactamente el código.
+  interface Occ { n: number; numero: string; cuerpo: string }
+  const occs: Occ[] = [];
   for (const parte of partes) {
     const m = parte.match(/^(?:Art\.|ART[IÍ]CULO)\s*(\d+\s*(?:bis|ter|quater)?)\s*[°º]?\s*[.\-—–]+\s*([\s\S]*)$/i);
     if (!m) continue;
     const numero = m[1].replace(/\s+/g, " ").trim().toLowerCase();
     const n = parseInt(numero, 10);
-    if (Number.isNaN(n) || n < desde || n > hasta) continue;
-
+    if (Number.isNaN(n)) continue;
     let cuerpo = m[2].replace(/\s*\n\s*/g, "\n").trim();
     cuerpo = cuerpo.split(/\(Art[íi]culo (?:sustituido|incorporado|derogado)/i)[0].trim();
     if (cuerpo.length < 30) continue;
+    occs.push({ n, numero, cuerpo });
+  }
 
-    const primeraLinea = cuerpo.split("\n")[0];
+  const fin = occs.findIndex((o) => o.n === CCCN_TOTAL_ARTICULOS);
+  if (fin < 0) {
+    return { chunks: [], parseInfo: `CCCN InfoLeg: no se encontró el art. ${CCCN_TOTAL_ARTICULOS}; formato de página inesperado.` };
+  }
+  const codigo: Occ[] = [occs[fin]];
+  for (let i = fin - 1; i >= 0; i--) {
+    const ultimo = codigo[codigo.length - 1];
+    if (occs[i].n > ultimo.n) break; // se rompió el descenso: salimos del código
+    codigo.push(occs[i]);
+    if (occs[i].n === 1) break; // llegamos al art. 1 del código
+  }
+  codigo.reverse();
+
+  const chunks: ChunkLegal[] = [];
+  const vistos = new Set<string>();
+  for (const o of codigo) {
+    if (o.n < desde || o.n > hasta) continue;
+    if (vistos.has(o.numero)) continue;
+    vistos.add(o.numero);
+    const primeraLinea = o.cuerpo.split("\n")[0];
     const titulo = primeraLinea.length <= 90 && !/\d{3}/.test(primeraLinea)
       ? primeraLinea.replace(/\.$/, "")
-      : `Artículo ${numero}`;
-
-    porNumero.set(numero, {
+      : `Artículo ${o.numero}`;
+    chunks.push({
       source_type: "codigo",
       source_name: "CCCN completo (ley 26.994)",
-      article_number: numero,
+      article_number: o.numero,
       title: titulo,
-      content: `Código Civil y Comercial de la Nación — Art. ${numero} (${titulo}): ${cuerpo.slice(0, 6000)}`,
+      content: `Código Civil y Comercial de la Nación — Art. ${o.numero} (${titulo}): ${o.cuerpo.slice(0, 6000)}`,
       jurisdiction: "nacional",
       area_derecho: ["civil", "comercial"],
     });
   }
-  const chunks = Array.from(porNumero.values());
 
   const parseInfo = `CCCN InfoLeg tramo ${desde}-${hasta}: ${chunks.length} artículos parseados`;
   return { chunks, parseInfo };
