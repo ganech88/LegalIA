@@ -44,6 +44,7 @@ export async function updateSession(request: NextRequest) {
     path === "/terminos" ||
     path === "/privacidad" ||
     path.startsWith("/herramientas") || // calculadoras públicas (SEO / adquisición)
+    path.startsWith("/portal/") || // portal del cliente (token no adivinable)
 
     path.startsWith("/api/webhooks") ||
     path.startsWith("/api/billing/webhook") || // webhook server-to-server (sin sesión)

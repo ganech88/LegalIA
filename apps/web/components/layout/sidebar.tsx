@@ -11,9 +11,11 @@ const nav = [
   { num: "I",    label: "Dashboard",    href: "/dashboard" },
   { num: "II",   label: "Escritos",     href: "/escritos" },
   { num: "II·b", label: "Telegramas",   href: "/escritos/telegramas" },
+  { num: "II·c", label: "Contestar demanda", href: "/escritos/contestar" },
   { num: "III",  label: "Asistente IA", href: "/asistente" },
   { num: "IV",   label: "Casos",        href: "/casos" },
   { num: "V",    label: "Agenda",       href: "/agenda" },
+  { num: "V·b",  label: "Subir cédula", href: "/agenda/cedula" },
   { num: "VI",   label: "Calculadoras", href: "/calculadoras" },
 ];
 

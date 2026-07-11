@@ -22,9 +22,64 @@ export const metadata: Metadata = {
   },
 };
 
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Calculadora de indemnización por despido — LegalIA",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "ARS" },
+      "url": "https://www.legaliapp.com/herramientas/indemnizacion-despido",
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "¿Cómo se calcula la indemnización por despido sin causa en Argentina?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "El art. 245 de la LCT (ley 20.744) fija un mes de sueldo por cada año de servicio o fracción mayor de tres meses, tomando como base la mejor remuneración mensual, normal y habitual del último año. A eso se suman preaviso (arts. 231/232), integración del mes de despido (art. 233), SAC proporcional y vacaciones no gozadas.",
+          },
+        },
+        {
+          "@type": "Question",
+          "name": "¿Qué es el tope del art. 245 LCT y cuándo aplica?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "La base de cálculo no puede superar tres veces el promedio de las remuneraciones del convenio colectivo aplicable. La CSJN en \"Vizzoti\" (2004) declaró que el tope es inconstitucional si reduce la base en más del 33%: en ese caso la base mínima es el 67% de la mejor remuneración.",
+          },
+        },
+        {
+          "@type": "Question",
+          "name": "¿Qué recargos agrega la ley 25.323?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "El art. 1 duplica la indemnización del art. 245 si la relación no estaba registrada o lo estaba de modo deficiente. El art. 2 agrega un 50% de las indemnizaciones de los arts. 232, 233 y 245 cuando el empleador, intimado fehacientemente, no paga y obliga al trabajador a iniciar acciones.",
+          },
+        },
+        {
+          "@type": "Question",
+          "name": "¿Esta calculadora reemplaza a un abogado?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Es una herramienta de estimación con la fórmula y la norma de cada rubro. Cada caso tiene particularidades (convenio, rubros no remunerativos, topes, intereses) que debe evaluar un abogado matriculado.",
+          },
+        },
+      ],
+    },
+  ],
+};
+
 export default function IndemnizacionDespidoPage() {
   return (
     <div className="bg-paper-rules min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+      />
       <header className="flex items-center justify-between border-b border-border bg-[rgba(250,250,247,0.9)] px-4 md:px-10 py-3">
         <Link href="/" className="font-[var(--font-display)] text-lg font-semibold text-[var(--brand-navy)]">
           LegalIA

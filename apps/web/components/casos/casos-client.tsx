@@ -37,6 +37,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, FolderOpen, Search } from "lucide-react";
 import { CasoTimeline } from "./caso-timeline";
+import { PortalToggle } from "./portal-toggle";
 
 const FUERO_COLORS: Record<string, string> = {
   laboral: "bg-blue-50 text-blue-700",
@@ -227,6 +228,11 @@ export function CasosClient({ initialCasos }: CasosClientProps) {
           {sheetCaso && (
             <ScrollArea className="flex-1 px-4">
               <CasoTimeline casoId={sheetCaso.id} />
+              <PortalToggle
+                casoId={sheetCaso.id}
+                initialToken={(sheetCaso as { portal_token?: string | null }).portal_token ?? null}
+                initialHabilitado={Boolean((sheetCaso as { portal_habilitado?: boolean }).portal_habilitado)}
+              />
               <div className="mt-4">
                 <CasoForm caso={sheetCaso} onSubmit={handleUpdate} saving={saving} orgId={orgId} />
               </div>
