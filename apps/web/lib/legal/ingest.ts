@@ -188,18 +188,20 @@ export async function chunksFromInfolegCCCN(
   if (fin < 0) {
     return { chunks: [], parseInfo: `CCCN InfoLeg: no se encontró el art. ${CCCN_TOTAL_ARTICULOS}; formato de página inesperado.` };
   }
-  // Caminata hacia atrás con tolerancia: aceptamos la ocurrencia si desciende
-  // de a poco (gap ≤ 50, por artículos derogados o variantes bis/ter); las que
-  // rompen el descenso (citas en notas, fe de erratas, otros bloques) se
-  // SALTEAN en lugar de cortar la caminata.
+  // Caminata hacia atrás por número ESPERADO: el código desciende casi siempre
+  // de a 1 (2671, 2670, ...). Aceptamos una ocurrencia solo si su número está
+  // en (esperado-10, esperado]: las citas a artículos dentro de notas de
+  // InfoLeg (que también matchean el regex) citan números lejanos y quedan
+  // salteadas sin derailar la caminata. Gap 10 tolera artículos que el parser
+  // no levantó (cuerpo corto, formato raro).
   const codigo: Occ[] = [occs[fin]];
+  let esperado = occs[fin].n - 1;
   let salteadas = 0;
-  for (let i = fin - 1; i >= 0; i--) {
-    const ultimo = codigo[codigo.length - 1];
+  for (let i = fin - 1; i >= 0 && esperado >= 1; i--) {
     const n = occs[i].n;
-    if (n <= ultimo.n && n >= ultimo.n - 50) {
+    if (n <= esperado && n > esperado - 10) {
       codigo.push(occs[i]);
-      if (n === 1) break; // llegamos al art. 1 del código
+      esperado = n - 1;
     } else {
       salteadas++;
     }
