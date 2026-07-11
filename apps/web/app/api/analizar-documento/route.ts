@@ -136,8 +136,7 @@ export async function POST(request: Request) {
     });
 
     const salida = respuesta.content
-      .filter((b): b is { type: "text"; text: string } => b.type === "text")
-      .map((b) => b.text)
+      .map((b) => (b.type === "text" ? b.text : ""))
       .join("");
 
     // Extraer el JSON (el modelo puede rodearlo de texto pese a la instrucción).
