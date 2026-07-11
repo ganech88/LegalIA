@@ -163,15 +163,17 @@ export async function chunksFromInfolegCCCN(
 
   const partes = texto.split(/(?=(?:Art\.|ART[IÍ]CULO)\s*\d+\s*(?:bis|ter|quater)?\s*[°º]?\s*[.\-—–])/gi);
 
-  const chunks: ChunkLegal[] = [];
-  const vistos = new Set<string>();
+  // La ley aprobatoria 26.994 tiene sus propios arts. 1-11 ANTES del anexo con
+  // el código (y el corte por TITULO PRELIMINAR no es confiable en la página
+  // real). Ante números duplicados gana la ÚLTIMA aparición: el código viene
+  // después de la ley, así que sus artículos pisan a los de la aprobatoria.
+  const porNumero = new Map<string, ChunkLegal>();
   for (const parte of partes) {
     const m = parte.match(/^(?:Art\.|ART[IÍ]CULO)\s*(\d+\s*(?:bis|ter|quater)?)\s*[°º]?\s*[.\-—–]+\s*([\s\S]*)$/i);
     if (!m) continue;
     const numero = m[1].replace(/\s+/g, " ").trim().toLowerCase();
     const n = parseInt(numero, 10);
     if (Number.isNaN(n) || n < desde || n > hasta) continue;
-    if (vistos.has(numero)) continue;
 
     let cuerpo = m[2].replace(/\s*\n\s*/g, "\n").trim();
     cuerpo = cuerpo.split(/\(Art[íi]culo (?:sustituido|incorporado|derogado)/i)[0].trim();
@@ -182,8 +184,7 @@ export async function chunksFromInfolegCCCN(
       ? primeraLinea.replace(/\.$/, "")
       : `Artículo ${numero}`;
 
-    vistos.add(numero);
-    chunks.push({
+    porNumero.set(numero, {
       source_type: "codigo",
       source_name: "CCCN completo (ley 26.994)",
       article_number: numero,
@@ -193,6 +194,7 @@ export async function chunksFromInfolegCCCN(
       area_derecho: ["civil", "comercial"],
     });
   }
+  const chunks = Array.from(porNumero.values());
 
   const parseInfo = `CCCN InfoLeg tramo ${desde}-${hasta}: ${chunks.length} artículos parseados`;
   return { chunks, parseInfo };
