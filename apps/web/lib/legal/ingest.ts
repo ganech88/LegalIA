@@ -170,7 +170,7 @@ export async function chunksFromInfolegCCCN(
   // sirven. Delimitación robusta: el art. 2671 solo existe en el código;
   // desde su PRIMERA aparición caminamos hacia atrás mientras la numeración
   // descienda — esa secuencia decreciente es exactamente el código.
-  interface Occ { n: number; numero: string; cuerpo: string }
+  interface Occ { n: number; numero: string; cuerpo: string; idx: number }
   const occs: Occ[] = [];
   for (const parte of partes) {
     const m = parte.match(/^(?:Art\.|ART[IÍ]CULO)\s*(\d+\s*(?:bis|ter|quater)?)\s*[°º]?\s*[.\-—–]+\s*([\s\S]*)$/i);
@@ -181,7 +181,7 @@ export async function chunksFromInfolegCCCN(
     let cuerpo = m[2].replace(/\s*\n\s*/g, "\n").trim();
     cuerpo = cuerpo.split(/\(Art[íi]culo (?:sustituido|incorporado|derogado)/i)[0].trim();
     if (cuerpo.length < 30) continue;
-    occs.push({ n, numero, cuerpo });
+    occs.push({ n, numero, cuerpo, idx: occs.length });
   }
 
   const fin = occs.findIndex((o) => o.n === CCCN_TOTAL_ARTICULOS);
@@ -208,9 +208,37 @@ export async function chunksFromInfolegCCCN(
   }
   codigo.reverse();
 
+  // Pasada de recuperación: si una nota cita un artículo CERCANO, la caminata
+  // acepta la cita (roba el número) y saltea los artículos reales intermedios
+  // (corridas de hasta 9). Reconstruimos por POSICIÓN documental: para cada
+  // número n, el artículo real es la PRIMERA ocurrencia con ese número ubicada
+  // entre las posiciones de los vecinos aceptados (las notas van después del
+  // artículo real, y las citas lejanas caen fuera del rango de posiciones).
+  const porN = new Map<number, Occ>();
+  for (const o of codigo) if (!porN.has(o.n)) porN.set(o.n, o);
+  const walkOrdenado = Array.from(porN.values()).sort((a, b) => a.n - b.n);
+  const maxN = walkOrdenado[walkOrdenado.length - 1].n;
+  // Barrido ascendente actualizando el vecino inferior con lo YA corregido
+  // (un vecino robado tiene idx corrido a la derecha y rompe los límites si
+  // no se corrige primero). El vecino superior sale de la caminata original:
+  // un robo solo corre idx a la derecha, y elegir la PRIMERA ocurrencia del
+  // rango tolera un límite derecho holgado.
+  let lower: Occ | null = null;
+  let upperPtr = 0;
+  for (let n = 1; n <= maxN; n++) {
+    while (upperPtr < walkOrdenado.length && walkOrdenado[upperPtr].n <= n) upperPtr++;
+    const desdeIdx = lower ? lower.idx : -1;
+    const hastaIdx = upperPtr < walkOrdenado.length ? walkOrdenado[upperPtr].idx : Number.MAX_SAFE_INTEGER;
+    const candidato = occs.find((o) => o.n === n && o.idx > desdeIdx && o.idx < hastaIdx);
+    if (candidato) porN.set(n, candidato); // primera ocurrencia del rango = artículo real
+    const actual = porN.get(n);
+    if (actual) lower = actual;
+  }
+  const codigoFinal = Array.from(porN.values()).sort((a, b) => a.n - b.n);
+
   const chunks: ChunkLegal[] = [];
   const vistos = new Set<string>();
-  for (const o of codigo) {
+  for (const o of codigoFinal) {
     if (o.n < desde || o.n > hasta) continue;
     if (vistos.has(o.numero)) continue;
     vistos.add(o.numero);
@@ -229,7 +257,7 @@ export async function chunksFromInfolegCCCN(
     });
   }
 
-  const parseInfo = `CCCN InfoLeg tramo ${desde}-${hasta}: ${chunks.length} artículos parseados (código delimitado: ${codigo.length} arts, ${salteadas} ocurrencias salteadas, ${occs.length} totales en página)`;
+  const parseInfo = `CCCN InfoLeg tramo ${desde}-${hasta}: ${chunks.length} artículos parseados (código delimitado: ${codigoFinal.length} arts tras recuperación, caminata: ${codigo.length}, salteadas: ${salteadas}, ${occs.length} ocurrencias en página)`;
   return { chunks, parseInfo };
 }
 
