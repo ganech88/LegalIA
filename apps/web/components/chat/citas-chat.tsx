@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ShieldCheck, AlertTriangle, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
-import { verificarCitas } from "@/lib/legal/citas";
+import { useCitasVerificadas } from "@/lib/legal/use-citas";
 
 /**
  * Semáforo de citas para las respuestas del asistente: contrasta los
@@ -10,7 +10,7 @@ import { verificarCitas } from "@/lib/legal/citas";
  */
 export function CitasChat({ texto }: { texto: string }) {
   const [open, setOpen] = useState(false);
-  const { citas, resumen } = useMemo(() => verificarCitas(texto), [texto]);
+  const { citas, resumen } = useCitasVerificadas(texto);
 
   if (citas.length === 0) return null;
 

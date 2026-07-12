@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ShieldCheck, AlertTriangle, HelpCircle, X } from "lucide-react";
-import { verificarCitas, type CitaVerificada } from "@/lib/legal/citas";
+import { type CitaVerificada } from "@/lib/legal/citas";
+import { useCitasVerificadas } from "@/lib/legal/use-citas";
 
 /**
  * Panel "Citas verificadas" — diferencial del producto.
@@ -18,7 +19,7 @@ const ESTILOS: Record<CitaVerificada["estado"], { icon: typeof ShieldCheck; colo
 
 export function PanelCitas({ texto, onClose }: { texto: string; onClose: () => void }) {
   const [filtro, setFiltro] = useState<"todas" | "atencion">("todas");
-  const { citas, resumen } = useMemo(() => verificarCitas(texto), [texto]);
+  const { citas, resumen } = useCitasVerificadas(texto);
 
   const visibles = filtro === "todas" ? citas : citas.filter((c) => c.estado !== "verificada");
 
@@ -97,7 +98,7 @@ export function PanelCitas({ texto, onClose }: { texto: string; onClose: () => v
 
       <div className="border-t border-border px-4 py-2">
         <p className="text-[9.5px] leading-snug text-[var(--brand-mute)]">
-          La verificación cubre el corpus cargado en LegalIA. Una cita “no verificable” no es
+          La verificación cubre los textos completos de la LCT y el CCCN (fuente InfoLeg) y el corpus curado de LegalIA. Una cita “no verificable” no es
           necesariamente incorrecta: significa que el profesional debe confirmarla en la fuente
           oficial antes de presentar el escrito.
         </p>

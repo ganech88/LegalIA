@@ -21,6 +21,21 @@ export interface CitaVerificada {
   detalle: string;
   /** Fuente del corpus si se encontró (p. ej. "LCT 20.744 art. 245"). */
   fuente?: string;
+  /** Datos para re-verificar contra la base legal completa (legal_knowledge). */
+  lookup?: { sources: string[]; articulo: string };
+}
+
+/**
+ * Nombres de fuente en legal_knowledge para cada ley del corpus. La base
+ * incluye textos COMPLETOS (LCT y CCCN íntegros vía InfoLeg) que superan al
+ * corpus curado local: si el artículo no está acá, se re-verifica allá.
+ */
+const DB_SOURCES: Record<string, string[]> = {
+  cccn: ["CCCN completo (ley 26.994)", "CCCN 26.994"],
+};
+
+function dbSources(ley: Ley): string[] {
+  return DB_SOURCES[ley.id] ?? [`${ley.nombre_corto} ${ley.numero}`.trim()];
 }
 
 /** Alias con que los escritos suelen referirse a cada ley del corpus. */
@@ -115,6 +130,7 @@ function verificarArticulos(texto: string): CitaVerificada[] {
           estado: "no_verificable",
           detalle: `La ${ley.nombre_corto} está en el corpus pero el art. ${numero} no está cargado. Verificá el texto de la norma antes de presentar.`,
           fuente: `${ley.nombre_corto} ${ley.numero}`,
+          lookup: { sources: dbSources(ley), articulo: numero.toLowerCase() },
         });
       }
     }
@@ -183,14 +199,15 @@ export interface ResultadoVerificacion {
   resumen: { verificadas: number; dudosas: number; no_verificables: number };
 }
 
+export function resumirCitas(citas: CitaVerificada[]): ResultadoVerificacion["resumen"] {
+  return {
+    verificadas: citas.filter((c) => c.estado === "verificada").length,
+    dudosas: citas.filter((c) => c.estado === "dudosa").length,
+    no_verificables: citas.filter((c) => c.estado === "no_verificable").length,
+  };
+}
+
 export function verificarCitas(texto: string): ResultadoVerificacion {
   const citas = [...verificarArticulos(texto), ...verificarFallos(texto)];
-  return {
-    citas,
-    resumen: {
-      verificadas: citas.filter((c) => c.estado === "verificada").length,
-      dudosas: citas.filter((c) => c.estado === "dudosa").length,
-      no_verificables: citas.filter((c) => c.estado === "no_verificable").length,
-    },
-  };
+  return { citas, resumen: resumirCitas(citas) };
 }
