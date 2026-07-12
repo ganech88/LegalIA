@@ -11,11 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import type { FormField, EscritoTemplate } from "@/types";
 
 interface DynamicFormProps {
+  initialValues?: Record<string, unknown>;
   template: EscritoTemplate;
 }
 
-export function DynamicForm({ template }: DynamicFormProps) {
-  const [values, setValues] = useState<Record<string, unknown>>({});
+export function DynamicForm({ template, initialValues }: DynamicFormProps) {
+  const [values, setValues] = useState<Record<string, unknown>>(initialValues ?? {});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState(false);

@@ -32,6 +32,7 @@ interface DashboardClientProps {
   escritosLimit: number;
   consultasLimit: number;
   casosActivos: number;
+  demoTemplateId?: string | null;
   userName: string;
   casos: CasoItem[];
   actividad: ActivityItem[];
@@ -67,6 +68,7 @@ export function DashboardClient({
   escritosLimit,
   consultasLimit,
   casosActivos,
+  demoTemplateId,
   casos,
   actividad,
 }: DashboardClientProps) {
@@ -123,6 +125,38 @@ export function DashboardClient({
             El asistente IA esta disponible con el corpus actualizado al {new Date().toLocaleDateString("es-AR")}.
           </p>
         </header>
+
+        {/* Primeros pasos: momento wow para cuentas sin actividad */}
+        {actividad.length === 0 && casosActivos === 0 && (
+          <section className="mb-8 rounded border border-[var(--brand-gold)]/50 bg-[var(--brand-gold-pale)] p-5">
+            <p className="masthead-meta mb-1"><span>PRIMEROS PASOS</span></p>
+            <h2 className="font-[var(--font-display)] text-xl font-semibold text-[var(--brand-navy)]">
+              Vé a LegalIA en acción en 60 segundos
+            </h2>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {demoTemplateId && (
+                <a href={`/escritos/nuevo/${demoTemplateId}?demo=1`} className="group rounded border border-border bg-white p-4 transition-shadow hover:shadow-md">
+                  <p className="text-[13px] font-bold text-[var(--brand-navy)]">Generá una demanda de ejemplo →</p>
+                  <p className="mt-1 text-[11.5px] leading-snug text-[var(--brand-mute)]">
+                    Caso ficticio pre-cargado. Un clic y mirá el escrito completo con citas verificadas y liquidación.
+                  </p>
+                </a>
+              )}
+              <a href="/agenda/cedula" className="group rounded border border-border bg-white p-4 transition-shadow hover:shadow-md">
+                <p className="text-[13px] font-bold text-[var(--brand-navy)]">Subí una cédula →</p>
+                <p className="mt-1 text-[11.5px] leading-snug text-[var(--brand-mute)]">
+                  Foto o PDF: LegalIA detecta el plazo y te lo agenda con alerta.
+                </p>
+              </a>
+              <a href="/asistente" className="group rounded border border-border bg-white p-4 transition-shadow hover:shadow-md">
+                <p className="text-[13px] font-bold text-[var(--brand-navy)]">Preguntale al asistente →</p>
+                <p className="mt-1 text-[11.5px] leading-snug text-[var(--brand-mute)]">
+                  Probá: "¿qué plazo tengo para contestar una demanda en CABA?" — responde con artículos reales.
+                </p>
+              </a>
+            </div>
+          </section>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

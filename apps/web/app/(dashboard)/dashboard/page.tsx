@@ -74,6 +74,19 @@ export default async function DashboardPage() {
   activity.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
   const topActivity = activity.slice(0, 8);
 
+  // Template para el demo de primeros pasos (cuentas sin actividad).
+  let demoTemplateId: string | null = null;
+  if (topActivity.length === 0 && (casosCount ?? 0) === 0) {
+    const { data: demoTpl } = await supabase
+      .from("escrito_templates")
+      .select("id")
+      .eq("subtipo", "despido_sin_causa")
+      .eq("activo", true)
+      .limit(1)
+      .maybeSingle();
+    demoTemplateId = demoTpl?.id ?? null;
+  }
+
   return (
     <DashboardClient
       greeting={greeting}
@@ -85,6 +98,7 @@ export default async function DashboardPage() {
       escritosLimit={limits.escritos_mes}
       consultasLimit={limits.consultas_mes}
       casosActivos={casosCount ?? 0}
+      demoTemplateId={demoTemplateId}
       userName={fullName}
       casos={(casos ?? []).map(c => ({
         id: c.id,
