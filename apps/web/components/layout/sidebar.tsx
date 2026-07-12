@@ -9,6 +9,7 @@ import { useState } from "react";
 
 const nav = [
   { num: "I",    label: "Dashboard",    href: "/dashboard" },
+  { num: "I·b",  label: "Tablero",      href: "/tablero" },
   { num: "II",   label: "Escritos",     href: "/escritos" },
   { num: "II·b", label: "Telegramas",   href: "/escritos/telegramas" },
   { num: "II·c", label: "Contestar demanda", href: "/escritos/contestar" },
