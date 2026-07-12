@@ -38,6 +38,23 @@ function dbSources(ley: Ley): string[] {
   return DB_SOURCES[ley.id] ?? [`${ley.nombre_corto} ${ley.numero}`.trim()];
 }
 
+/** Leyes que NO están en el corpus local pero SÍ completas en legal_knowledge. */
+const LEYES_SOLO_DB: Array<{ alias: string[]; sources: string[]; nombre: string }> = [
+  {
+    alias: ["ley 18.345", "ley 18345", "18.345", "lo 18.345", "organizacion y procedimiento de la justicia nacional del trabajo"],
+    sources: ["Ley 18.345 (procedimiento laboral CABA)"],
+    nombre: "ley 18.345",
+  },
+];
+
+function buscarLeySoloDB(refLey: string): { sources: string[]; nombre: string } | null {
+  const ref = normalizar(refLey);
+  for (const l of LEYES_SOLO_DB) {
+    if (l.alias.some((a) => contieneToken(ref, normalizar(a)))) return l;
+  }
+  return null;
+}
+
 /** Alias con que los escritos suelen referirse a cada ley del corpus. */
 const ALIAS_LEYES: Record<string, string[]> = {
   lct: ["lct", "ley de contrato de trabajo", "ley 20.744", "ley 20744", "20.744"],
@@ -102,12 +119,16 @@ function verificarArticulos(texto: string): CitaVerificada[] {
       const citaTexto = `art. ${numero}${ley ? ` ${ley.nombre_corto}` : ` ${contexto.trim().slice(0, 40)}`.trimEnd()}`;
 
       if (!ley) {
-        // No pudimos identificar la ley → no verificable (puede ser CN, CCT, ley fuera del corpus).
+        // ¿Está en la base completa aunque no en el corpus local?
+        const soloDb = buscarLeySoloDB(contexto);
         resultados.push({
-          cita: citaTexto,
+          cita: soloDb ? `art. ${numero} ${soloDb.nombre}` : citaTexto,
           tipo: "articulo",
           estado: "no_verificable",
-          detalle: "No se pudo identificar la norma citada dentro del corpus. Verificá número y vigencia antes de presentar.",
+          detalle: soloDb
+            ? `Verificando contra el texto completo de la ${soloDb.nombre}...`
+            : "No se pudo identificar la norma citada dentro del corpus. Verificá número y vigencia antes de presentar.",
+          lookup: soloDb ? { sources: soloDb.sources, articulo: numero.toLowerCase() } : undefined,
         });
         continue;
       }
