@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { embeddingsDisponibles } from "@/lib/ai/embeddings";
-import { chunksFromCorpus, chunksFromInfolegLCT, chunksFromInfolegCCCN, CCCN_TOTAL_ARTICULOS, ingestChunks } from "@/lib/legal/ingest";
+import { chunksFromCorpus, chunksFromInfolegLCT, chunksFromInfolegCCCN, chunksFromInfolegLey18345, CCCN_TOTAL_ARTICULOS, ingestChunks } from "@/lib/legal/ingest";
 
 /**
  * Ingestión de la base RAG (legal_knowledge, pgvector).
@@ -55,6 +55,24 @@ export async function GET(request: Request) {
     const { count } = await admin
       .from("legal_knowledge")
       .select("id", { count: "exact", head: true });
+    resultado.total_filas_legal_knowledge = count;
+    return NextResponse.json(resultado);
+  }
+
+  // Modo ley 18.345: ?fuente=ley18345 (171 arts, una sola invocación).
+  if (searchParams.get("fuente") === "ley18345") {
+    try {
+      const { chunks, parseInfo } = await chunksFromInfolegLey18345();
+      resultado.ley18345_info = parseInfo;
+      if (chunks.length >= 100) {
+        resultado.ley18345_ingestado = await ingestChunks(admin, chunks);
+      } else {
+        resultado.ley18345_omitido = `Solo ${chunks.length} artículos parseados (<100): no se ingesta.`;
+      }
+    } catch (e) {
+      resultado.ley18345_error = e instanceof Error ? e.message : String(e);
+    }
+    const { count } = await admin.from("legal_knowledge").select("id", { count: "exact", head: true });
     resultado.total_filas_legal_knowledge = count;
     return NextResponse.json(resultado);
   }

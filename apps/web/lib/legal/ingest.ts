@@ -144,12 +144,23 @@ const CCCN_INFOLEG_URL =
 
 export const CCCN_TOTAL_ARTICULOS = 2671;
 
-export async function chunksFromInfolegCCCN(
+interface CodigoInfolegCfg {
+  url: string;
+  etiqueta: string;        // para logs: "CCCN", "ley 18.345"
+  ancla: number;           // número del ÚLTIMO artículo (delimita el cuerpo)
+  source_type: string;
+  source_name: string;
+  prefijo: string;         // prefijo del content: "Código Civil y Comercial de la Nación"
+  area_derecho: string[];
+}
+
+async function parseCodigoInfoleg(
+  cfg: CodigoInfolegCfg,
   desde: number,
   hasta: number,
 ): Promise<{ chunks: ChunkLegal[]; parseInfo: string }> {
-  const res = await fetch(CCCN_INFOLEG_URL, { headers: { "User-Agent": "LegalIA/1.0" } });
-  if (!res.ok) throw new Error(`InfoLeg respondió ${res.status} para el CCCN`);
+  const res = await fetch(cfg.url, { headers: { "User-Agent": "LegalIA/1.0" } });
+  if (!res.ok) throw new Error(`InfoLeg respondió ${res.status} para ${cfg.etiqueta}`);
   const buf = await res.arrayBuffer();
   const html = new TextDecoder("latin1").decode(buf);
 
@@ -184,9 +195,9 @@ export async function chunksFromInfolegCCCN(
     occs.push({ n, numero, cuerpo, idx: occs.length });
   }
 
-  const fin = occs.findIndex((o) => o.n === CCCN_TOTAL_ARTICULOS);
+  const fin = occs.findIndex((o) => o.n === cfg.ancla);
   if (fin < 0) {
-    return { chunks: [], parseInfo: `CCCN InfoLeg: no se encontró el art. ${CCCN_TOTAL_ARTICULOS}; formato de página inesperado.` };
+    return { chunks: [], parseInfo: `${cfg.etiqueta} InfoLeg: no se encontró el art. ${cfg.ancla}; formato de página inesperado.` };
   }
   // Caminata hacia atrás por número ESPERADO: el código desciende casi siempre
   // de a 1 (2671, 2670, ...). Aceptamos una ocurrencia solo si su número está
@@ -251,18 +262,49 @@ export async function chunksFromInfolegCCCN(
       ? primeraLinea.replace(/\.$/, "")
       : `Artículo ${o.numero}`;
     chunks.push({
-      source_type: "codigo",
-      source_name: "CCCN completo (ley 26.994)",
+      source_type: cfg.source_type,
+      source_name: cfg.source_name,
       article_number: o.numero,
       title: titulo,
-      content: `Código Civil y Comercial de la Nación — Art. ${o.numero} (${titulo}): ${o.cuerpo.slice(0, 6000)}`,
+      content: `${cfg.prefijo} — Art. ${o.numero} (${titulo}): ${o.cuerpo.slice(0, 6000)}`,
       jurisdiction: "nacional",
-      area_derecho: ["civil", "comercial"],
+      area_derecho: cfg.area_derecho,
     });
   }
 
-  const parseInfo = `CCCN InfoLeg tramo ${desde}-${hasta}: ${chunks.length} artículos parseados (código delimitado: ${codigoFinal.length} arts tras recuperación, caminata: ${codigo.length}, salteadas: ${salteadas}, ${occs.length} ocurrencias en página)`;
+  const parseInfo = `${cfg.etiqueta} InfoLeg tramo ${desde}-${hasta}: ${chunks.length} artículos parseados (cuerpo delimitado: ${codigoFinal.length} arts tras recuperación, caminata: ${codigo.length}, salteadas: ${salteadas}, ${occs.length} ocurrencias en página)`;
   return { chunks, parseInfo };
+}
+
+export function chunksFromInfolegCCCN(desde: number, hasta: number) {
+  return parseCodigoInfoleg({
+    url: CCCN_INFOLEG_URL,
+    etiqueta: "CCCN",
+    ancla: CCCN_TOTAL_ARTICULOS,
+    source_type: "codigo",
+    source_name: "CCCN completo (ley 26.994)",
+    prefijo: "Código Civil y Comercial de la Nación",
+    area_derecho: ["civil", "comercial"],
+  }, desde, hasta);
+}
+
+/**
+ * Ley 18.345 (organización y procedimiento de la Justicia Nacional del
+ * Trabajo, CABA), texto ordenado dec. 106/98. Un solo bloque, 171 artículos
+ * (8-16 derogados). Entra en una sola invocación.
+ */
+export const LEY18345_TOTAL_ARTICULOS = 171;
+
+export function chunksFromInfolegLey18345() {
+  return parseCodigoInfoleg({
+    url: "https://servicios.infoleg.gob.ar/infolegInternet/anexos/45000-49999/45628/texact.htm",
+    etiqueta: "Ley 18.345",
+    ancla: LEY18345_TOTAL_ARTICULOS,
+    source_type: "ley",
+    source_name: "Ley 18.345 (procedimiento laboral CABA)",
+    prefijo: "Ley 18.345 — Organización y Procedimiento de la Justicia Nacional del Trabajo",
+    area_derecho: ["laboral"],
+  }, 1, LEY18345_TOTAL_ARTICULOS);
 }
 
 /**
