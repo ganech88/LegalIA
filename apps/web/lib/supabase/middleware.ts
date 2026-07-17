@@ -40,6 +40,7 @@ export async function updateSession(request: NextRequest) {
     path === "/recuperar" ||
     path === "/restablecer" || // llega con code del email; el callback crea la sesión
     path === "/robots.txt" ||
+    path === "/google5528711437cc4f25.html" || // verificación Google Search Console
     path === "/sitemap.xml" ||
     path === "/terminos" ||
     path === "/privacidad" ||
