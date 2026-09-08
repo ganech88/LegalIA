@@ -189,8 +189,8 @@ export default function RegisterPage() {
           </ul>
           <div className="mt-8 grid grid-cols-2 gap-3">
             {[
-              { v: "2.400+", l: "escritos generados" },
-              { v: "98%", l: "precision en citas" },
+              { v: "Ley 27.802", l: "calculadoras actualizadas a la reforma 2026" },
+              { v: "Semáforo", l: "de citas contra la ley completa" },
             ].map(({ v, l }) => (
               <div key={l} className="card-editorial p-4 text-center">
                 <div className="font-[var(--font-display)] text-2xl font-semibold text-[var(--brand-navy)]">{v}</div>

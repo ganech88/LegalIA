@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { buscarEnCorpus } from "@/lib/legal/corpus";
 import type { Ley, LeyArticulo, Fallo } from "@/lib/legal/corpus";
@@ -9,6 +9,21 @@ export default function BusquedaSemanticaPage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{ leyes: (Ley & { matches: LeyArticulo[] })[]; fallos: Fallo[] } | null>(null);
   const [searched, setSearched] = useState(false);
+
+  // ?q= desde el buscador del dashboard.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        const q = new URLSearchParams(window.location.search).get("q");
+        if (q && q.trim()) {
+          setQuery(q);
+          setResults(buscarEnCorpus(q.trim()));
+          setSearched(true);
+        }
+      } catch { /* ignore */ }
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();

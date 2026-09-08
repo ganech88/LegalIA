@@ -156,7 +156,7 @@ export async function streamWithFallback(
   if (providers.length === 0) {
     const encoder = new TextEncoder();
     const text = `[MODO DEMO — Sin API key configurada]\n\nConfigurá GROQ_API_KEY, GOOGLE_AI_API_KEY o ANTHROPIC_API_KEY en .env.local`;
-    let collected = text;
+    const collected = text;
     return {
       stream: new ReadableStream({
         start(controller) {
@@ -275,15 +275,24 @@ async function buildStream(
     messages: [{ role: "user", content: userMessage }],
   });
 
+  // Esperamos el PRIMER evento antes de devolver el stream: así un 401/429/529
+  // de Anthropic se lanza acá y streamWithFallback pasa al siguiente proveedor,
+  // en vez de terminar como "[Error: ...]" dentro de la respuesta del usuario.
+  const iterator = anthropicStream[Symbol.asyncIterator]();
+  const primero = await iterator.next();
+
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        for await (const event of anthropicStream) {
+        let paso = primero;
+        while (!paso.done) {
+          const event = paso.value;
           if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
             const text = event.delta.text;
             fullResponse += text;
             controller.enqueue(encoder.encode(text));
           }
+          paso = await iterator.next();
         }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Error";

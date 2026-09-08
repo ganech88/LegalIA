@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "sonner";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -116,6 +118,8 @@ export function CasosClient({ initialCasos }: CasosClientProps) {
       setCasos((prev) => [data as Caso, ...prev]);
       setDialogOpen(false);
       router.refresh();
+    } else {
+      toast.error("No se pudo crear el caso. Revisá los datos e intentá de nuevo.");
     }
     setSaving(false);
   }
@@ -149,6 +153,8 @@ export function CasosClient({ initialCasos }: CasosClientProps) {
       );
       setSheetCaso(null);
       router.refresh();
+    } else {
+      toast.error("No se pudo guardar el caso.");
     }
     setSaving(false);
   }

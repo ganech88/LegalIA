@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { embeddingsDisponibles } from "@/lib/ai/embeddings";
@@ -16,8 +17,12 @@ import { chunksFromCorpus, chunksFromInfolegLCT, chunksFromInfolegCCCN, chunksFr
 export const maxDuration = 60;
 
 export async function GET(request: Request) {
-  const auth = request.headers.get("authorization");
-  if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  const auth = request.headers.get("authorization") ?? "";
+  const esperado = `Bearer ${process.env.CRON_SECRET ?? ""}`;
+  const okAuth = Boolean(process.env.CRON_SECRET)
+    && Buffer.byteLength(auth) === Buffer.byteLength(esperado)
+    && timingSafeEqual(Buffer.from(auth), Buffer.from(esperado));
+  if (!okAuth) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 

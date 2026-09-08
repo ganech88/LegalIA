@@ -9,25 +9,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  const { query } = await request.json();
-  if (!query?.trim()) {
+  const body = await request.json().catch(() => ({}));
+  const query = typeof body?.query === "string" ? body.query : "";
+  if (!query.trim()) {
     return NextResponse.json({ results: { leyes: [], fallos: [], casos: [], escritos: [] } });
   }
 
-  const q = query.trim();
+  const q = query.trim().slice(0, 100);
+  // Escapamos la gramática del filtro de PostgREST y los comodines de ILIKE.
+  const qLike = q.replace(/[%_\\]/g, (m: string) => `\\${m}`).replace(/[,()."]/g, " ");
 
   const corpusResults = buscarEnCorpus(q);
 
   const { data: casos } = await supabase
     .from("casos")
     .select("id, caratula, expediente, fuero, estado")
-    .or(`caratula.ilike.%${q}%,expediente.ilike.%${q}%`)
+    .or(`caratula.ilike.%${qLike}%,expediente.ilike.%${qLike}%`)
     .limit(5);
 
   const { data: escritos } = await supabase
     .from("escritos")
     .select("id, titulo, tipo, created_at")
-    .ilike("titulo", `%${q}%`)
+    .ilike("titulo", `%${qLike}%`)
     .limit(5);
 
   return NextResponse.json({

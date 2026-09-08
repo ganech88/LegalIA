@@ -28,8 +28,9 @@ Para la liquidación, calcular cada rubro según la normativa vigente:
 - Integración mes de despido (art. 233 LCT): días faltantes del mes
 - SAC proporcional (art. 123 LCT)
 - Vacaciones proporcionales (art. 156 LCT)
-- Art. 2 Ley 25.323 si no se abonó indemnización
-- Multa art. 80 LCT si corresponde`;
+- Art. 2 Ley 25.323 si no se abonó indemnización (vigente)
+- Art. 1 ley 25.323, multas ley 24.013 y art. 80 LCT (3 sueldos): SOLO si el despido es anterior al 09/07/2024 (derogados por art. 99 ley 27.742)
+- Despidos desde el 06/03/2026: base del art. 245 sin SAC, piso 67 %, actualización IPC + 3 % (ley 27.802)`;
 
 export function buildDemandaLaboralPrompt(datos: Record<string, unknown>): string {
   const fields = [

@@ -47,6 +47,7 @@ export default function PlazosPage() {
   const [desde, setDesde] = useState("");
   const [dias, setDias] = useState("");
   const [presetPlazo, setPresetPlazo] = useState("");
+  const [jurisdiccion, setJurisdiccion] = useState<"nacional" | "pba">("nacional");
   const [resProc, setResProc] = useState<VencimientoResult | null>(null);
 
   // Prescripción
@@ -58,7 +59,7 @@ export default function PlazosPage() {
     e.preventDefault();
     const n = parseInt(dias, 10);
     if (!desde || !n) return;
-    setResProc(calcularVencimiento({ desde, diasHabiles: n }));
+    setResProc(calcularVencimiento({ desde, diasHabiles: n, jurisdiccion }));
   }
 
   function calcularPresc(e: React.FormEvent) {
@@ -137,6 +138,18 @@ export default function PlazosPage() {
               </div>
 
               <div className="space-y-1.5">
+                <label className="t-overline text-[var(--brand-navy)] block">Jurisdicción (plazo de gracia)</label>
+                <select
+                  value={jurisdiccion}
+                  onChange={(e) => setJurisdiccion(e.target.value as "nacional" | "pba")}
+                  className="w-full rounded border border-border bg-white px-3 py-2.5 text-[13px] focus:border-[var(--brand-gold)] focus:outline-none"
+                >
+                  <option value="nacional">Nacional / CABA — 2 primeras horas (art. 124 CPCCN)</option>
+                  <option value="pba">Provincia de Buenos Aires — 4 primeras horas (art. 124 CPCC PBA)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
                 <label className="t-overline text-[var(--brand-navy)] block">Días hábiles *</label>
                 <input type="number" min={1} value={dias} onChange={(e) => { setDias(e.target.value); setPresetPlazo(""); }} required placeholder="5"
                   className="w-full rounded border border-border bg-white px-3 py-2.5 text-[13px] focus:border-[var(--brand-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold-pale)]" />
@@ -191,9 +204,12 @@ export default function PlazosPage() {
                     {formatLargo(resProc.vencimiento)}
                   </div>
                   <div className="mt-2 text-[12px] text-[var(--brand-ink-2)]">
-                    Plazo de gracia (art. 124): hasta las primeras horas hábiles del{" "}
+                    Plazo de gracia (art. 124): hasta las <strong>{resProc.horasGracia} primeras horas</strong> hábiles del{" "}
                     <strong className="capitalize">{formatLargo(resProc.diaGracia)}</strong>.
                   </div>
+                  {resProc.advertencias.map((a) => (
+                    <div key={a} className="mt-2 rounded border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-900">{a}</div>
+                  ))}
                   <div className="mt-1 font-mono text-[11px] text-[var(--brand-mute)]">
                     {resProc.diasCorridos} días corridos · {resProc.excluidos.length} días no hábiles excluidos
                   </div>

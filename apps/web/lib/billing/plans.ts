@@ -76,7 +76,7 @@ export const PLANS: Record<PlanId, PlanDef> = {
 };
 
 export function getPlan(id: string | null | undefined): PlanDef {
-  if (id && id in PLANS) return PLANS[id as PlanId];
+  if (id && Object.hasOwn(PLANS, id)) return PLANS[id as PlanId];
   return PLANS.free;
 }
 

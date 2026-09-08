@@ -22,8 +22,8 @@ Contenido obligatorio:
 - Descripción de la injuria grave del empleador
 - Referencia a intimaciones previas si las hubo
 - Colocación formal en situación de despido indirecto por exclusiva culpa del empleador
-- Reclamo de indemnizaciones: arts. 245, 232, 233 LCT, SAC proporcional, vacaciones, art. 80
-- Intimación a entregar certificados art. 80 en plazo legal (30 días)
+- Reclamo de indemnizaciones: arts. 245, 232, 233 LCT, SAC proporcional, vacaciones, art. 2 ley 25.323
+- Intimación a entregar los certificados del art. 80 LCT (sin reclamar la indemnización de 3 sueldos, derogada por la ley 27.742 para distractos desde el 09/07/2024)
 - Tono formal y contundente
 - Formato carta documento estándar argentina`;
 

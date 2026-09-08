@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { getAnthropicClient } from "@/lib/ai/anthropic";
 import { checkIpRateLimit, getClientIp } from "@/lib/rate-limit";
+import { reservarCuota } from "@/lib/api/quota";
+import { CONTEXTO_REFORMAS_2024_2026 } from "@/lib/legal/regimen";
 
 /**
  * Análisis de documentos con visión IA — los dos momentos donde el trabajo
@@ -99,23 +100,16 @@ export async function POST(request: Request) {
   if (!archivo && !texto) {
     return NextResponse.json({ error: "Subí un archivo o pegá el texto del documento." }, { status: 400 });
   }
+  if (archivo && (typeof archivo !== "object" || typeof archivo.base64 !== "string" || typeof archivo.media_type !== "string")) {
+    return NextResponse.json({ error: "Archivo inválido." }, { status: 400 });
+  }
   if (archivo && archivo.base64.length > MAX_BASE64) {
     return NextResponse.json({ error: "El archivo supera los 4 MB. Subí una versión más liviana." }, { status: 400 });
   }
 
   // Cuota: cuenta como consulta.
-  const admin = createAdminClient();
-  const usageClient = admin ?? supabase;
-  const { data: canUse } = await usageClient.rpc("check_and_increment_usage", {
-    p_user_id: user.id,
-    p_kind: "consulta",
-  });
-  if (!canUse) {
-    return NextResponse.json(
-      { error: "Alcanzaste el límite de consultas de tu plan. Actualizá para continuar." },
-      { status: 429 },
-    );
-  }
+  const cuota = await reservarCuota(supabase, user.id, "consulta", { rateAction: "analizar", rateMax: 10 });
+  if (!cuota.ok) return cuota.response;
 
   try {
     const contenido: Array<ReturnType<typeof bloqueArchivo> | { type: "text"; text: string }> = [];
@@ -131,7 +125,7 @@ export async function POST(request: Request) {
       model: "claude-sonnet-4-6",
       max_tokens: 2048,
       temperature: 0.2,
-      system: modo === "cedula" ? PROMPT_CEDULA : PROMPT_DEMANDA,
+      system: (modo === "cedula" ? PROMPT_CEDULA : PROMPT_DEMANDA) + "\n\n" + CONTEXTO_REFORMAS_2024_2026,
       messages: [{ role: "user", content: contenido }],
     });
 
@@ -147,7 +141,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ modo, analisis });
   } catch (error: unknown) {
     // Devolver el crédito si el análisis falló.
-    await usageClient.rpc("decrement_usage", { p_user_id: user.id, p_kind: "consulta" });
+    await cuota.refund();
     const msg = error instanceof Error ? error.message : "Error al analizar el documento";
     return NextResponse.json({ error: msg }, { status: 502 });
   }

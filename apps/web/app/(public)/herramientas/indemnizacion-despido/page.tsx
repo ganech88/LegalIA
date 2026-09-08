@@ -4,15 +4,18 @@ import { CalcIndemnizacionPublica } from "@/components/calculadoras/calc-indemni
 import { PoweredBy } from "@/components/layout/powered-by";
 
 export const metadata: Metadata = {
-  title: "Calculadora de indemnización por despido 2026 (art. 245 LCT) — Gratis | LegalIA",
+  title: "Calculadora de indemnización por despido 2026 — Ley 27.802 y Ley Bases (art. 245 LCT) | LegalIA",
   description:
-    "Calculá gratis la indemnización por despido sin causa en Argentina: antigüedad (art. 245 LCT), preaviso, integración, SAC, vacaciones, Ley 25.323 y multa art. 80. Con la fórmula y la norma de cada rubro.",
+    "Calculá gratis la indemnización por despido sin causa en Argentina, actualizada a la reforma laboral 2026 (ley 27.802) y a la Ley Bases (27.742): antigüedad (art. 245 LCT), preaviso, integración, SAC y vacaciones, con el régimen que corresponde a la fecha del despido y la norma y fórmula de cada rubro.",
   keywords: [
-    "calculadora indemnización despido",
+    "calculadora indemnización despido 2026",
+    "indemnización despido ley 27.802",
+    "reforma laboral 2026 indemnización",
     "indemnización despido sin causa argentina",
     "art 245 LCT",
     "liquidación final despido",
     "cuánto me corresponde por despido 2026",
+    "multas ley 24.013 derogadas",
   ],
   alternates: { canonical: "/herramientas/indemnizacion-despido" },
   openGraph: {
@@ -54,10 +57,18 @@ const JSON_LD = {
         },
         {
           "@type": "Question",
-          "name": "¿Qué recargos agrega la ley 25.323?",
+          "name": "¿Qué cambió con la reforma laboral 2026 (ley 27.802) en la indemnización por despido?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "El art. 1 duplica la indemnización del art. 245 si la relación no estaba registrada o lo estaba de modo deficiente. El art. 2 agrega un 50% de las indemnizaciones de los arts. 232, 233 y 245 cuando el empleador, intimado fehacientemente, no paga y obliga al trabajador a iniciar acciones.",
+            "text": "Para despidos desde el 06/03/2026 la base del art. 245 excluye expresamente el SAC y los conceptos de pago no mensual, el tope es de tres salarios promedio del convenio y la base nunca puede ser inferior al 67% de la remuneración (piso Vizzoti convertido en ley). Durante el período de prueba no hay preaviso. Los créditos laborales se actualizan por IPC más un 3% anual (art. 276 LCT).",
+          },
+        },
+        {
+          "@type": "Question",
+          "name": "¿Siguen vigentes las multas de la ley 24.013, la ley 25.323 y el art. 80 LCT?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No para despidos posteriores al 09/07/2024: el art. 99 de la ley 27.742 (Ley Bases) derogó los arts. 8, 9, 10, 11 y 15 de la ley 24.013, el art. 1 de la ley 25.323 y la indemnización del art. 80 LCT (art. 45 ley 25.345). Sigue vigente el art. 2 de la ley 25.323, que agrega un 50% de las indemnizaciones de los arts. 232, 233 y 245 cuando el empleador, intimado fehacientemente, no paga.",
           },
         },
         {
@@ -99,25 +110,35 @@ export default function IndemnizacionDespidoPage() {
 
       <main className="mx-auto max-w-[1080px] px-4 md:px-6 py-8 md:py-12">
         <header className="mb-8 border-b border-[var(--brand-navy)] pb-6">
-          <div className="masthead-meta mb-2"><span>HERRAMIENTA GRATUITA · ACTUALIZADA 2026</span></div>
+          <div className="masthead-meta mb-2"><span>HERRAMIENTA GRATUITA · ACTUALIZADA A LA LEY 27.802 (REFORMA 2026) Y A LA LEY BASES</span></div>
           <h1 className="font-[var(--font-display)] text-[clamp(1.75rem,3.5vw,2.5rem)] font-semibold tracking-[-0.03em] text-[var(--brand-navy)]">
-            Calculadora de indemnización por despido — Art. 245 LCT
+            Calculadora de indemnización por despido 2026 — Art. 245 LCT
           </h1>
-          <p className="mt-2 max-w-[640px] text-[14px] text-[var(--brand-ink-2)]">
-            Antigüedad, preaviso, integración del mes, SAC, vacaciones proporcionales, incrementos de la Ley 25.323 y
-            multa del art. 80 LCT. Cada rubro con su norma y su fórmula, listo para auditar.
+          <p className="mt-2 max-w-[680px] text-[14px] text-[var(--brand-ink-2)]">
+            Antigüedad, preaviso, integración del mes, SAC y vacaciones proporcionales, con el régimen que corresponde a
+            la <strong>fecha del despido</strong>: anterior a la Ley Bases, Ley Bases (27.742) o Modernización Laboral (27.802).
+            Cada rubro con su norma y su fórmula, listo para auditar.
           </p>
         </header>
 
         <CalcIndemnizacionPublica />
 
-        <section className="mt-12 grid gap-6 md:grid-cols-3">
+        <section className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <article className="card-editorial p-5">
             <h2 className="mb-2 font-[var(--font-display)] text-[15px] font-semibold text-[var(--brand-navy)]">¿Cómo se calcula?</h2>
             <p className="text-[12.5px] leading-relaxed text-[var(--brand-ink-2)]">
               La indemnización por antigüedad del art. 245 LCT equivale a un mes de la mejor remuneración mensual,
               normal y habitual por cada año de servicio o fracción mayor de 3 meses. Se suman preaviso (arts. 231/232),
               integración del mes (art. 233), SAC y vacaciones proporcionales.
+            </p>
+          </article>
+          <article className="card-editorial p-5">
+            <h2 className="mb-2 font-[var(--font-display)] text-[15px] font-semibold text-[var(--brand-navy)]">¿Qué cambió en 2024 y 2026?</h2>
+            <p className="text-[12.5px] leading-relaxed text-[var(--brand-ink-2)]">
+              La ley 27.742 (09/07/2024) derogó las multas de la ley 24.013, el art. 1 de la ley 25.323 y la
+              indemnización del art. 80 LCT. La ley 27.802 (06/03/2026) excluyó el SAC de la base del art. 245, fijó el
+              piso legal del 67 %, eliminó el preaviso en período de prueba y estableció la actualización por IPC + 3 %
+              anual (art. 276 LCT). Esta calculadora elige el régimen por la fecha del despido.
             </p>
           </article>
           <article className="card-editorial p-5">

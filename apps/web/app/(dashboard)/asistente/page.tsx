@@ -9,14 +9,15 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   id?: string;
+  feedback?: "util" | "no_util";
 }
 
 const SUGGESTIONS = [
-  "¿Que dice el art. 245 LCT?",
-  "Plazos CPCCN apelacion",
-  "Multa art. 80",
-  "Tasa activa BNA actual",
-  "Indemnizacion ART — calculo",
+  "¿Qué cambió en el art. 245 LCT con la ley 27.802?",
+  "¿Siguen vigentes las multas de la ley 24.013?",
+  "Actualización de créditos laborales: art. 276 vs. art. 55 ley 27.802",
+  "Plazo para apelar en el fuero laboral (ley 18.345)",
+  "Indemnización ART — cálculo y pisos SRT",
   "Despido indirecto — requisitos",
 ];
 
@@ -34,7 +35,7 @@ export default function AsistentePage() {
       const supabase = createClient();
       const { data } = await supabase
         .from("consultas_ia")
-        .select("pregunta, respuesta")
+        .select("id, pregunta, respuesta, feedback")
         .order("created_at", { ascending: false })
         .limit(10);
       if (data && data.length > 0) {
@@ -42,14 +43,45 @@ export default function AsistentePage() {
           .reverse()
           .flatMap((c) => [
             { role: "user" as const, content: c.pregunta },
-            { role: "assistant" as const, content: c.respuesta },
+            { role: "assistant" as const, content: c.respuesta, id: c.id, feedback: (c.feedback as Message["feedback"]) ?? undefined },
           ]);
         setMessages((prev) => (prev.length === 0 ? historial : prev));
       }
       setHistoryLoaded(true);
+      // ?q= desde el buscador del dashboard: se envía directo.
+      try {
+        const q = new URLSearchParams(window.location.search).get("q");
+        if (q && q.trim()) {
+          setInput(q.trim());
+          window.history.replaceState(null, "", "/asistente");
+        }
+      } catch { /* ignore */ }
     }
     loadHistory();
   }, []);
+
+  async function enviarFeedback(index: number, valor: "util" | "no_util") {
+    const msg = messages[index];
+    if (!msg) return;
+    setMessages((prev) => prev.map((m, i) => (i === index ? { ...m, feedback: valor } : m)));
+    const supabase = createClient();
+    let id = msg.id;
+    if (!id) {
+      // Respuesta recién generada: buscamos la fila por la pregunta anterior.
+      const pregunta = messages[index - 1]?.content;
+      if (!pregunta) return;
+      const { data } = await supabase
+        .from("consultas_ia")
+        .select("id")
+        .eq("pregunta", pregunta)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      id = data?.id;
+      if (id) setMessages((prev) => prev.map((m, i) => (i === index ? { ...m, id } : m)));
+    }
+    if (id) await supabase.from("consultas_ia").update({ feedback: valor }).eq("id", id);
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,11 +96,21 @@ export default function AsistentePage() {
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setLoading(true);
 
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: userMessage }),
-    });
+    // Últimos turnos como contexto (el backend recorta a 6).
+    const historial = messages.slice(-6).map((m) => ({ role: m.role, content: m.content.slice(0, 3000) }));
+
+    let res: Response;
+    try {
+      res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMessage, historial }),
+      });
+    } catch {
+      setMessages((prev) => [...prev, { role: "assistant", content: "No pudimos conectarnos con el servidor. Revisá tu conexión e intentá de nuevo." }]);
+      setLoading(false);
+      return;
+    }
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -90,14 +132,22 @@ export default function AsistentePage() {
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
     if (reader) {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        assistantContent += chunk;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          assistantContent += chunk;
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { role: "assistant", content: assistantContent };
+            return updated;
+          });
+        }
+      } catch {
         setMessages((prev) => {
           const updated = [...prev];
-          updated[updated.length - 1] = { role: "assistant", content: assistantContent };
+          updated[updated.length - 1] = { role: "assistant", content: (assistantContent || "") + "\n\n[Se cortó la conexión. La consulta no se descontó de tu cuota.]" };
           return updated;
         });
       }
@@ -179,13 +229,17 @@ export default function AsistentePage() {
                   )}
                   {msg.role === "assistant" && msg.content && (
                     <div className="mt-2.5 pt-2 border-t border-dashed border-border flex items-center gap-1.5 text-[10px] text-[var(--brand-mute)]">
-                      <span>¿Fue util?</span>
-                      <button className="px-1.5 py-0.5 rounded border border-border text-[var(--brand-mute)] hover:border-[var(--brand-gold)] hover:text-[var(--brand-navy)]">
-                        <ThumbsUp className="h-3 w-3 inline mr-0.5" /> Si
-                      </button>
-                      <button className="px-1.5 py-0.5 rounded border border-border text-[var(--brand-mute)] hover:border-[var(--brand-gold)] hover:text-[var(--brand-navy)]">
-                        <ThumbsDown className="h-3 w-3 inline mr-0.5" /> No
-                      </button>
+                      <span>{msg.feedback ? "Gracias por tu devolución." : "¿Fue útil?"}</span>
+                      {!msg.feedback && (
+                        <>
+                          <button type="button" onClick={() => enviarFeedback(i, "util")} className="px-1.5 py-0.5 rounded border border-border text-[var(--brand-mute)] hover:border-[var(--brand-gold)] hover:text-[var(--brand-navy)]">
+                            <ThumbsUp className="h-3 w-3 inline mr-0.5" /> Sí
+                          </button>
+                          <button type="button" onClick={() => enviarFeedback(i, "no_util")} className="px-1.5 py-0.5 rounded border border-border text-[var(--brand-mute)] hover:border-[var(--brand-gold)] hover:text-[var(--brand-navy)]">
+                            <ThumbsDown className="h-3 w-3 inline mr-0.5" /> No
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

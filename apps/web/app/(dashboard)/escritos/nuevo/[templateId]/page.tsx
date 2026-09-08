@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { DynamicForm } from "@/components/escritos/dynamic-form";
 import type { EscritoTemplate } from "@/types";
+import { PageShell } from "@/components/layout/page-shell";
 
 /**
  * Datos FICTICIOS para el modo demo (?demo=1): el abogado nuevo ve el
@@ -25,8 +26,8 @@ const DEMO_DATA: Record<string, Record<string, string>> = {
     cct: "CCT 130/75 (Empleados de Comercio)",
     jornada: "Completa, lunes a sábado",
     jurisdiccion: "CABA",
-    hechos: "El actor trabajó más de 7 años como vendedor. El 30/05/2026 fue despedido sin causa mediante telegrama, sin abonarse la liquidación final ni entregarse los certificados del art. 80 LCT. Fue intimado fehacientemente por CD y la demandada no pagó.",
-    rubros_reclamados: "Indemnización por antigüedad, preaviso, integración mes de despido, SAC y vacaciones proporcionales, art. 2 ley 25.323, multa art. 80 LCT",
+    hechos: "El actor trabajó más de 7 años como vendedor. El 30/05/2026 fue despedido sin causa mediante telegrama, sin abonarse la liquidación final ni entregarse los certificados del art. 80 LCT. Fue intimado fehacientemente por CD y la demandada no pagó. Despido posterior a la ley 27.802: base del art. 245 sin SAC y actualización por IPC + 3 % (art. 276 LCT).",
+    rubros_reclamados: "Indemnización por antigüedad, preaviso, integración mes de despido, SAC y vacaciones proporcionales, art. 2 ley 25.323, entrega de certificados art. 80 LCT (sin multa: derogada por ley 27.742)",
   },
 };
 
@@ -35,10 +36,11 @@ export default async function NuevoEscritoPage({
   searchParams,
 }: {
   params: Promise<{ templateId: string }>;
-  searchParams: Promise<{ demo?: string }>;
+  searchParams: Promise<{ demo?: string; caso?: string }>;
 }) {
   const { templateId } = await params;
-  const { demo } = await searchParams;
+  const { demo, caso } = await searchParams;
+  const casoId = caso && /^[0-9a-f-]{36}$/i.test(caso) ? caso : undefined;
   const supabase = await createClient();
 
   const { data: template } = await supabase
@@ -53,7 +55,20 @@ export default async function NuevoEscritoPage({
   const typedTemplate = template as unknown as EscritoTemplate;
   const demoValues = demo === "1" ? DEMO_DATA[typedTemplate.subtipo ?? ""] : undefined;
 
+  // La jurisdicción principal del perfil (que pidió el onboarding) prellena el
+  // formulario si el template la tiene como campo.
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: perfil } = user
+    ? await supabase.from("profiles").select("jurisdiccion_principal").eq("id", user.id).single()
+    : { data: null };
+  const tieneJurisdiccion = (typedTemplate.campos_requeridos.fields as { name: string; options?: string[] }[]).find((f) => f.name === "jurisdiccion");
+  const jurisdiccionPerfil = perfil?.jurisdiccion_principal && tieneJurisdiccion?.options?.includes(perfil.jurisdiccion_principal)
+    ? { jurisdiccion: perfil.jurisdiccion_principal }
+    : {};
+  const initialValues = demoValues ? { ...jurisdiccionPerfil, ...demoValues } : Object.keys(jurisdiccionPerfil).length ? jurisdiccionPerfil : undefined;
+
   return (
+    <PageShell crumbs={[{ label: "Escritos", href: "/escritos" }, { label: typedTemplate.nombre_display }]}>
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-slate-900">
@@ -82,9 +97,10 @@ export default async function NuevoEscritoPage({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DynamicForm template={typedTemplate} initialValues={demoValues} />
+          <DynamicForm template={typedTemplate} initialValues={initialValues} casoId={casoId} />
         </CardContent>
       </Card>
     </div>
+    </PageShell>
   );
 }

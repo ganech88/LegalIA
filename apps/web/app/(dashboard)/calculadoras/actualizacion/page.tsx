@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { formatCurrency } from "@/lib/legal/calculadoras";
+import { formatCurrency, calcularActualizacion27802 } from "@/lib/legal/calculadoras";
 
 const INDICES = [
+  { value: "laboral_27802", label: "Crédito laboral — IPC + 3 % anual (art. 276 LCT, ley 27.802)" },
   { value: "ipc", label: "IPC Nacional (INDEC)" },
   { value: "ripte", label: "RIPTE (Secretaría de Trabajo)" },
   { value: "cer", label: "CER (BCRA)" },
@@ -31,7 +32,8 @@ export default function ActualizacionPage() {
   const [capital, setCapital] = useState("");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
-  const [indice, setIndice] = useState("ipc");
+  const [indice, setIndice] = useState("laboral_27802");
+  const esLaboral = indice === "laboral_27802";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ApiResult | null>(null);
@@ -43,7 +45,7 @@ export default function ActualizacionPage() {
     setResult(null);
     try {
       const res = await fetch(
-        `/api/indices?indice=${indice}&desde=${fechaDesde}&hasta=${fechaHasta}`,
+        `/api/indices?indice=${esLaboral ? "ipc" : indice}&desde=${fechaDesde}&hasta=${fechaHasta}`,
       );
       const data = await res.json();
       if (!res.ok) {
@@ -58,6 +60,10 @@ export default function ActualizacionPage() {
   }
 
   const capitalNum = parseFloat(capital) || 0;
+  const laboral =
+    result && esLaboral
+      ? calcularActualizacion27802({ capital: capitalNum, coeficiente_ipc: result.coeficiente, fecha_desde: fechaDesde, fecha_hasta: fechaHasta })
+      : null;
 
   return (
     <div className="bg-paper-rules min-h-screen">
@@ -77,7 +83,8 @@ export default function ActualizacionPage() {
           </h1>
           <p className="mt-2 text-[14px] text-[var(--brand-ink-2)] max-w-[640px]">
             Indexación con las series oficiales de INDEC, Secretaría de Trabajo y BCRA, consultadas en vivo
-            desde datos.gob.ar. Cada coeficiente muestra el valor del índice y la fecha exacta del dato.
+            desde datos.gob.ar. Incluye el nuevo régimen de créditos laborales de la ley 27.802: IPC + 3 % anual
+            (art. 276 LCT) y la banda del art. 55 para juicios en trámite.
           </p>
         </header>
 
@@ -188,16 +195,43 @@ export default function ActualizacionPage() {
                       <td className="py-2.5 text-[var(--brand-ink)]">Variación acumulada</td>
                       <td className="py-2.5 text-right font-mono text-[var(--brand-gold)] font-medium">+{((result.coeficiente - 1) * 100).toFixed(1)}%</td>
                     </tr>
+                  {laboral && (
+                    <>
+                      <tr>
+                        <td className="py-2.5 text-[var(--brand-ink)]">Capital actualizado por IPC</td>
+                        <td className="py-2.5 text-right font-mono text-[var(--brand-navy)] font-medium">{formatCurrency(laboral.capital_ipc)}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5">
+                          <span className="text-[var(--brand-ink)]">Interés puro 3 % anual</span>
+                          <span className="block text-[11px] text-[var(--brand-mute)]">{laboral.dias} días · sobre el capital ya actualizado</span>
+                        </td>
+                        <td className="py-2.5 text-right font-mono text-[var(--brand-navy)] font-medium">{formatCurrency(laboral.interes_3)}</td>
+                      </tr>
+                    </>
+                  )}
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 border-[var(--brand-navy)]">
-                      <td className="py-3 font-[var(--font-display)] font-semibold text-[var(--brand-navy)] text-[15px]">CAPITAL ACTUALIZADO</td>
+                      <td className="py-3 font-[var(--font-display)] font-semibold text-[var(--brand-navy)] text-[15px]">
+                        {laboral ? "TOTAL ART. 276 LCT (casos nuevos)" : "CAPITAL ACTUALIZADO"}
+                      </td>
                       <td className="py-3 text-right font-[var(--font-display)] font-semibold text-[var(--brand-navy)] text-[17px]">
-                        {formatCurrency(capitalNum * result.coeficiente)}
+                        {formatCurrency(laboral ? laboral.total_art_276 : capitalNum * result.coeficiente)}
                       </td>
                     </tr>
                   </tfoot>
                 </table>
+
+                {laboral && (
+                  <div className="mt-4 rounded border border-[var(--brand-navy)]/20 bg-[var(--brand-navy)]/5 px-4 py-3 text-[12px] text-[var(--brand-ink-2)]">
+                    <strong className="text-[var(--brand-navy)]">Juicios en trámite — art. 55 ley 27.802:</strong> tasa pasiva BCRA del período,
+                    con techo en <strong>{formatCurrency(laboral.art_55.techo_total)}</strong> (IPC + 3 %) y piso en{" "}
+                    <strong>{formatCurrency(laboral.art_55.piso_total)}</strong> (67 % del techo). La CNAT Sala I (17/03/2026) y la
+                    Cámara del Trabajo de Córdoba (10/03/2026) declararon inconstitucional el art. 55 y aplicaron IPC + 3 % pleno;
+                    las Salas III y IV lo aplicaron. Conviene liquidar de las dos formas y plantear la inconstitucionalidad en subsidio.
+                  </div>
+                )}
 
                 {result.dato_parcial && (
                   <div className="mt-4 rounded border border-amber-200 bg-amber-50 px-4 py-2.5 text-[12px] text-amber-800">

@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   const desde = url.searchParams.get("desde");
   const hasta = url.searchParams.get("hasta");
 
-  if (!indice || !(indice in INDICES)) {
+  if (!indice || !Object.hasOwn(INDICES, indice)) {
     return NextResponse.json({ error: "Índice inválido. Opciones: ipc, ripte, cer, uva." }, { status: 400 });
   }
   const reFecha = /^\d{4}-\d{2}(-\d{2})?$/;

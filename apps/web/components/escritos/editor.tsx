@@ -9,6 +9,8 @@ import { PanelVersiones } from "./panel-versiones";
 import { PanelChecklist } from "./panel-checklist";
 import { CasoSelector } from "./caso-selector";
 import type { Escrito } from "@/types";
+import { toast } from "sonner";
+import { nombreArchivoSeguro } from "@/lib/api/titulo";
 
 interface EscritoEditorProps {
   escrito: Escrito;
@@ -37,7 +39,11 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
   const [showVersiones, setShowVersiones] = useState(false);
   const [showControl, setShowControl] = useState(false);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
+  const [titulo, setTitulo] = useState(escrito.titulo);
+  const [editandoTitulo, setEditandoTitulo] = useState(false);
   const lastSavedContent = useRef(content);
+  const contentRef = useRef(content);
+  contentRef.current = content;
   const lastVersionAt = useRef(0);
   const supabase = createClient();
 
@@ -76,29 +82,73 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
         if (Date.now() - lastVersionAt.current > 5 * 60 * 1000) {
           await saveVersion(content, "auto");
         }
+      } else {
+        toast.error("No se pudo auto-guardar. Revisá tu conexión: los cambios siguen en pantalla.");
       }
     }, 2500);
     return () => clearTimeout(timer);
   }, [content, escrito.id, supabase, saveVersion]);
 
-  async function handleSave() {
+  // Aviso al cerrar la pestaña con cambios sin guardar (ventana del autosave).
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (contentRef.current !== lastSavedContent.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, []);
+
+  const handleSave = useCallback(async () => {
     setSaving(true);
     setSaveOk(false);
-    await supabase
+    const { error } = await supabase
       .from("escritos")
-      .update({ contenido_editado: content })
+      .update({ contenido_editado: contentRef.current })
       .eq("id", escrito.id);
-    lastSavedContent.current = content;
-    await saveVersion(content, "manual");
+    if (error) {
+      toast.error("No se pudo guardar el escrito. Intentá de nuevo.");
+      setSaving(false);
+      return;
+    }
+    lastSavedContent.current = contentRef.current;
+    await saveVersion(contentRef.current, "manual");
     setSaving(false);
     setSaveOk(true);
     setTimeout(() => setSaveOk(false), 2500);
+  }, [escrito.id, supabase, saveVersion]);
+
+  // Ctrl/Cmd + S guarda.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        void handleSave();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleSave]);
+
+  async function handleRenombrar(nuevo: string) {
+    const limpio = nuevo.trim().slice(0, 160);
+    setEditandoTitulo(false);
+    if (!limpio || limpio === titulo) return;
+    const { error } = await supabase.from("escritos").update({ titulo: limpio }).eq("id", escrito.id);
+    if (error) { toast.error("No se pudo renombrar."); return; }
+    setTitulo(limpio);
   }
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("No se pudo copiar al portapapeles.");
+    }
   }
 
   async function handleExportDocx() {
@@ -186,7 +236,7 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
     });
 
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, `${escrito.titulo}.docx`);
+    saveAs(blob, nombreArchivoSeguro(titulo, "docx"));
   }
 
   async function handleInsertSignature() {
@@ -225,7 +275,7 @@ export function EscritoEditor({ escrito }: EscritoEditorProps) {
 p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style></head>
 <body>${html}<script>window.onload=function(){window.print()}<\/script></body></html>`;
     const w = window.open("", "_blank");
-    if (!w) { alert("Permití las ventanas emergentes para exportar a PDF."); return; }
+    if (!w) { toast.error("Permití las ventanas emergentes para exportar a PDF."); return; }
     w.document.write(doc);
     w.document.close();
   }
@@ -233,15 +283,33 @@ p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style>
   return (
     <div className="flex h-full flex-col card-editorial overflow-hidden">
       {/* Toolbar */}
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-[var(--brand-paper)] px-4 py-3">
-        <div className="flex min-w-0 items-center gap-2.5">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border bg-[var(--brand-paper)] px-4 py-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <div className="font-[var(--font-display)] text-xl font-semibold italic text-[var(--brand-gold)]">§</div>
-          <h2 className="truncate font-[var(--font-display)] text-[14px] font-semibold text-[var(--brand-navy)]">
-            {escrito.titulo}
-          </h2>
+          {editandoTitulo ? (
+            <input
+              autoFocus
+              defaultValue={titulo}
+              maxLength={160}
+              onBlur={(e) => handleRenombrar(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleRenombrar((e.target as HTMLInputElement).value);
+                if (e.key === "Escape") setEditandoTitulo(false);
+              }}
+              className="w-full max-w-[520px] rounded border border-[var(--brand-gold)] bg-white px-2 py-1 font-[var(--font-display)] text-[14px] font-semibold text-[var(--brand-navy)] focus:outline-none"
+            />
+          ) : (
+            <h2
+              onClick={() => setEditandoTitulo(true)}
+              title="Clic para renombrar"
+              className="cursor-text truncate font-[var(--font-display)] text-[14px] font-semibold text-[var(--brand-navy)] hover:underline decoration-dotted"
+            >
+              {titulo}
+            </h2>
+          )}
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleCopy}
             title="Copiar al portapapeles"
@@ -352,7 +420,7 @@ p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style>
       </div>
 
       {/* Document area */}
-      <div className="flex flex-1 overflow-hidden bg-[var(--brand-paper)]">
+      <div className="relative flex flex-1 overflow-hidden bg-[var(--brand-paper)]">
         <Textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}

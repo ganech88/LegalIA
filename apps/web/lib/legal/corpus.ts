@@ -2,6 +2,8 @@ export interface LeyArticulo {
   numero: string;
   titulo: string;
   texto: string;
+  /** Presente cuando el artículo fue derogado: el semáforo lo marca en vez de validarlo. */
+  vigencia?: { derogado_por: string; desde: string; nota?: string };
 }
 
 export interface Ley {
@@ -51,18 +53,20 @@ const LEYES_BASE: Ley[] = [
       { numero: "14", titulo: "Nulidad por fraude laboral", texto: "Sera nulo todo contrato por el cual las partes hayan procedido con simulacion o fraude a la ley laboral, sea aparentando normas contractuales no laborales, interposicion de personas o de cualquier otro medio." },
       { numero: "21", titulo: "Contrato de trabajo", texto: "Habra contrato de trabajo, cualquiera sea su forma o denominacion, siempre que una persona fisica se obligue a realizar actos, ejecutar obras o prestar servicios en favor de la otra y bajo la dependencia de esta, durante un periodo determinado o indeterminado de tiempo, mediante el pago de una remuneracion." },
       { numero: "23", titulo: "Presuncion de existencia del contrato", texto: "El hecho de la prestacion de servicios hace presumir la existencia de un contrato de trabajo, salvo que por las circunstancias, las relaciones o causas que lo motiven se demostrase lo contrario." },
-      { numero: "80", titulo: "Deber de observar obligaciones", texto: "La obligacion de ingresar los fondos de seguridad social por parte del empleador y los sindicales a su cargo, ya sea como obligado directo o como agente de retencion, configurara asimismo una obligacion contractual. El empleador debera entregar al trabajador al momento de la extincion, certificado de trabajo conteniendo las indicaciones del articulo 80." },
+      { numero: "80", titulo: "Deber de observar las obligaciones frente a los organismos sindicales y de la seguridad social — Certificado de trabajo", texto: "La obligacion de ingresar los fondos de seguridad social por parte del empleador y los sindicales a su cargo, ya sea como obligado directo o como agente de retencion, configurara asimismo una obligacion contractual. El empleador, por su parte, debera dar al trabajador, cuando este lo requiriese a la epoca de la extincion de la relacion, constancia documentada de ello. Cuando el contrato de trabajo se extinguiere por cualquier causa, el empleador estara obligado a entregar al trabajador un certificado de trabajo, conteniendo las indicaciones sobre el tiempo de prestacion de servicios, naturaleza de estos, constancia de los sueldos percibidos y de los aportes y contribuciones efectuados a los organismos de la seguridad social. NOTA: la indemnizacion de 3 remuneraciones por falta de entrega (parrafo incorporado por el art. 45 de la ley 25.345) fue derogada por el art. 99 de la ley 27.742 (vigente desde el 09/07/2024); subsiste la obligacion de entregar los certificados." },
       { numero: "9", titulo: "Principio in dubio pro operario", texto: "En caso de duda sobre la aplicacion de normas legales o convencionales prevalecera la mas favorable al trabajador. Si la duda recayese en la interpretacion o alcance de la ley, o en la apreciacion de la prueba, los jueces se decidiran en el sentido mas favorable al trabajador." },
       { numero: "66", titulo: "Ius variandi", texto: "El empleador esta facultado para introducir cambios relativos a la forma y modalidades de la prestacion del trabajo, en tanto no importen un ejercicio irrazonable de esa facultad, ni alteren modalidades esenciales del contrato, ni causen perjuicio material ni moral al trabajador. Ante su ejercicio abusivo el trabajador podra considerarse despedido sin justa causa o accionar para restablecer las condiciones alteradas." },
-      { numero: "92 bis", titulo: "Periodo de prueba", texto: "El contrato de trabajo por tiempo indeterminado se entiende celebrado a prueba durante los primeros tres (3) meses. Cualquiera de las partes podra extinguir la relacion durante ese lapso sin expresion de causa y sin derecho a indemnizacion por antiguedad, con obligacion de preavisar." },
+      { numero: "92 bis", titulo: "Periodo de prueba (texto segun ley 27.742)", texto: "El contrato de trabajo por tiempo indeterminado, excepto el referido en el articulo 96, se entendera celebrado a prueba durante los primeros seis (6) meses de vigencia. Los convenios colectivos de trabajo pueden ampliar dicho periodo de prueba hasta ocho (8) meses para las empresas de seis (6) a cien (100) trabajadores y hasta doce (12) meses para las de hasta cinco (5) trabajadores. Cualquiera de las partes podra extinguir la relacion durante ese lapso sin expresion de causa, sin derecho a indemnizacion con motivo de la extincion. Un empleador no puede contratar a un mismo trabajador mas de una vez utilizando el periodo de prueba. NOTA: hasta el 08/07/2024 el periodo era de tres (3) meses; desde la ley 27.802 (06/03/2026) no se requiere preaviso durante el periodo de prueba (art. 231)." },
       { numero: "178", titulo: "Presuncion de despido por maternidad", texto: "Se presume, salvo prueba en contrario, que el despido de la mujer trabajadora obedece a razones de maternidad o embarazo cuando se dispusiera dentro del plazo de siete meses y medio anteriores o posteriores a la fecha del parto, siempre que la mujer haya cumplido con la notificacion del embarazo. En tal caso procede la indemnizacion agravada del art. 182." },
       { numero: "182", titulo: "Indemnizacion por maternidad/matrimonio", texto: "En caso de despido por causa de embarazo o maternidad, el empleador abonara una indemnizacion equivalente a un (1) ano de remuneraciones, que se acumula a la establecida en el art. 245." },
       { numero: "242", titulo: "Justa causa de despido", texto: "Una de las partes podra hacer denuncia del contrato de trabajo en caso de inobservancia por la otra de las obligaciones resultantes del mismo que configuren injuria y que, por su gravedad, no consientan la prosecucion de la relacion. La valoracion debera ser hecha prudencialmente por los jueces, segun las modalidades y circunstancias de cada caso." },
       { numero: "243", titulo: "Comunicacion e invariabilidad de la causa", texto: "El despido por justa causa dispuesto por el empleador, como la denuncia del contrato fundada en justa causa por el trabajador, deberan comunicarse por escrito con expresion suficientemente clara de los motivos en que se funda la ruptura. Ante la demanda no se admitira la modificacion de la causal de despido consignada en la comunicacion." },
-      { numero: "231", titulo: "Plazos de preaviso", texto: "El contrato de trabajo no podra ser disuelto por voluntad de una de las partes, sin previo aviso, o en su defecto, indemnizacion ademas de la que corresponda al trabajador por su antiguedad en el empleo, cuando el contrato se disuelva por voluntad del empleador. El preaviso debera darse con la anticipacion siguiente: a) por el trabajador, de quince (15) dias; b) por el empleador, de quince (15) dias cuando el trabajador se encontrare en periodo de prueba; de un (1) mes cuando el trabajador tuviese una antiguedad en el empleo que no exceda de cinco (5) anos y de dos (2) meses cuando fuere superior." },
+      { numero: "231", titulo: "Preaviso — plazos (texto segun ley 27.802)", texto: "El contrato de trabajo no podra ser disuelto por voluntad de una de las partes, sin previo aviso, o en su defecto, indemnizacion ademas de la que corresponda al trabajador por su antiguedad en el empleo, cuando el contrato se disuelva por voluntad del empleador. El preaviso, cuando las partes no lo fijen en un termino mayor, debera darse con la anticipacion siguiente: a) por el trabajador, de quince (15) dias; b) por el empleador, de un (1) mes cuando el trabajador tuviese una antiguedad en el empleo que no exceda de cinco (5) anos y de dos (2) meses cuando fuere superior. Para el supuesto en que el trabajador se encuentre en periodo de prueba no se requerira la obligacion de preaviso. NOTA: hasta el 05/03/2026 el empleador debia preavisar con quince (15) dias durante el periodo de prueba." },
       { numero: "232", titulo: "Indemnizacion sustitutiva del preaviso", texto: "La parte que omita el preaviso o lo otorgue de modo insuficiente debera abonar a la otra una indemnizacion sustitutiva equivalente a la remuneracion que corresponderia al trabajador durante los plazos senalados en el articulo 231." },
       { numero: "233", titulo: "Integracion del mes de despido", texto: "Cuando la extincion del contrato de trabajo dispuesta por el empleador se produzca sin preaviso y en fecha que no coincida con el ultimo dia del mes, la indemnizacion sustitutiva debida al trabajador se integrara con una suma igual a los salarios por los dias faltantes hasta el ultimo dia del mes en el que se produjera el despido." },
-      { numero: "245", titulo: "Indemnizacion por antiguedad", texto: "En los casos de despido dispuesto por el empleador sin justa causa, habiendo o no mediado preaviso, este debera abonar al trabajador una indemnizacion equivalente a un (1) mes de sueldo por cada ano de servicio o fraccion mayor de tres (3) meses, tomando como base la mejor remuneracion mensual, normal y habitual devengada durante el ultimo ano o durante el tiempo de prestacion de servicios si este fuera menor. Dicha base no podra exceder el equivalente de tres (3) veces el importe mensual de la suma que resulte del promedio de todas las remuneraciones previstas en el convenio colectivo de trabajo aplicable al trabajador." },
+      { numero: "245 bis", titulo: "Agravamiento indemnizatorio por despido discriminatorio (ley 27.742)", texto: "Sera considerado despido por un acto de discriminacion aquel originado por motivos de raza o etnia, religion, nacionalidad, ideologia, opinion politica o gremial, sexo o genero, orientacion sexual, posicion economica, caracteres fisicos o discapacidad. En este supuesto la prueba estara a cargo de quien invoque la causal, y en caso de sentencia judicial que corrobore el caracter discriminatorio del despido, correspondera el pago de una indemnizacion agravada especial que ascendera a un monto equivalente al cincuenta por ciento (50%) de la establecida por el articulo 245 LCT. Segun la gravedad de los hechos, los jueces podran incrementar esta indemnizacion hasta el cien por ciento (100%). El despido dispuesto, en todos los casos, producira la extincion definitiva del vinculo laboral a todos los efectos, no procediendo la reinstalacion." },
+      { numero: "276", titulo: "Actualizacion de creditos laborales (texto segun ley 27.802)", texto: "Los creditos provenientes de las relaciones individuales de trabajo seran actualizados, desde la fecha en que cada suma es debida y hasta su efectivo pago, conforme la variacion que experimente el Indice de Precios al Consumidor (IPC) Nivel General elaborado por el INDEC, con mas una tasa de interes pura del tres por ciento (3%) anual. NOTA: para los juicios en tramite sin sentencia firme rige el art. 55 de la ley 27.802 (tasa pasiva BCRA con techo IPC+3% y piso del 67% de dicho techo), cuya constitucionalidad esta discutida en la CNAT." },
+      { numero: "245", titulo: "Indemnizacion por antiguedad o despido (texto segun ley 27.802)", texto: "En los casos de despido dispuesto por el empleador sin justa causa, habiendo o no mediado preaviso, este debera abonar al trabajador una indemnizacion equivalente a un (1) mes de sueldo por cada ano de servicio o fraccion mayor de tres (3) meses, tomando como base la mejor remuneracion mensual, normal y habitual devengada durante el ultimo ano o durante el tiempo de prestacion de servicios si este fuera menor. En la base de calculo no tendran incidencia los conceptos de pago no mensuales, como el sueldo anual complementario, ni las gratificaciones o premios de pago no mensual. Dicha base no podra exceder el equivalente a tres (3) veces el importe del salario mensual promedio de todas las remuneraciones previstas en el convenio colectivo de trabajo aplicable al trabajador. En ningun caso la base de calculo podra ser inferior al sesenta y siete por ciento (67%) de la mejor remuneracion mensual, normal y habitual (doctrina Vizzoti, CSJN 14/09/2004, hoy texto legal). El importe de esta indemnizacion en ningun caso podra ser inferior a un (1) mes de sueldo calculado sobre la base del sistema establecido en el primer parrafo. Mediante convenio colectivo las partes pueden sustituir el presente regimen por un fondo o sistema de cese laboral (art. 245 segun ley 27.742). NOTA: para despidos anteriores al 06/03/2026 rige el texto anterior, sin la exclusion expresa del SAC (aunque el plenario CNAT 322 'Tulosai', 19/11/2009, ya lo excluia) y sin el piso legal del 67%." },
       { numero: "246", titulo: "Despido indirecto", texto: "Cuando el trabajador hiciese denuncia del contrato de trabajo fundado en justa causa, tendra derecho a las indemnizaciones previstas en los articulos 232, 233 y 245." },
       { numero: "256", titulo: "Prescripcion", texto: "Prescriben a los dos (2) anos las acciones relativas a creditos provenientes de las relaciones individuales de trabajo y, en general, de disposiciones de convenios colectivos, laudos con eficacia de convenios colectivos y disposiciones legales o reglamentarias del derecho del trabajo." },
     ],
@@ -153,17 +157,6 @@ export const JURISPRUDENCIA: Fallo[] = [
     verificado: true,
   },
   {
-    id: "gonzalez-posse",
-    caratula: "Gonzalez, Martin N. c/ Polimat SA y otro s/ despido",
-    tribunal: "CNAT - Sala V",
-    fecha: "2023-03-15",
-    tema: "Registracion deficiente — multas arts. 8, 9 y 15 LNE",
-    area: "laboral",
-    sumario: "Se hizo lugar a las multas de los arts. 8, 9 y 15 de la Ley Nacional de Empleo por registracion deficiente del vinculo laboral. Se considero acreditada la diferencia entre la remuneracion real y la registrada.",
-    voces: ["empleo no registrado", "multas", "LNE", "registracion"],
-    verificado: false,
-  },
-  {
     id: "alvarez-cencosud",
     caratula: "Alvarez, Maximiliano y otros c/ Cencosud SA s/ accion de amparo",
     tribunal: "CSJN",
@@ -195,28 +188,6 @@ export const JURISPRUDENCIA: Fallo[] = [
     sumario: "La CSJN reconocio el derecho indemnizatorio de un empleado contratado de manera sucesiva por el Estado bajo modalidades temporales que encubrian una relacion permanente.",
     voces: ["empleo publico", "fraude", "contratacion", "estabilidad", "Estado"],
     verificado: true,
-  },
-  {
-    id: "cantilo",
-    caratula: "Cantilo, Hector c/ Johnson & Johnson de Argentina SA s/ despido",
-    tribunal: "CNAT - Sala II",
-    fecha: "2022-08-10",
-    tema: "Teletrabajo — jornada y control patronal",
-    area: "laboral",
-    sumario: "Se reconocio el caracter laboral de la relacion en modalidad de teletrabajo, aplicando los principios de la LCT y la Ley 27.555 de Teletrabajo.",
-    voces: ["teletrabajo", "jornada", "ley 27.555", "relacion de dependencia"],
-    verificado: false,
-  },
-  {
-    id: "ruiz-diaz",
-    caratula: "Ruiz Diaz, Maria c/ Supermercados del Sur SA s/ despido",
-    tribunal: "CNAT - Sala IX",
-    fecha: "2024-02-20",
-    tema: "Despido durante embarazo — presuncion art. 178 LCT",
-    area: "laboral",
-    sumario: "Se aplico la presuncion del art. 178 LCT que establece que el despido de la mujer trabajadora dentro del plazo de 7 meses y medio anteriores o posteriores al parto se presume discriminatorio, correspondiendo la indemnizacion agravada del art. 182 LCT.",
-    voces: ["embarazo", "maternidad", "despido", "indemnizacion agravada", "presuncion"],
-    verificado: false,
   },
   {
     id: "perez-disco",
@@ -268,12 +239,16 @@ export function buscarEnCorpus(query: string): { leyes: (Ley & { matches: LeyArt
   const q = query.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
   const leyResults = LEYES.map(ley => {
-    const matches = ley.articulos.filter(a =>
-      a.texto.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").includes(q) ||
-      a.titulo.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").includes(q) ||
-      `art ${a.numero}`.includes(q) ||
-      `articulo ${a.numero}`.includes(q)
-    );
+    // Números: coincidencia EXACTA del artículo ("2" no debe traer el 245, 232, 2562…).
+    const soloNumero = /^\d+(\s*(bis|ter|quater))?$/.test(q);
+    const numeroBuscado = q.match(/^art(?:iculo)?\.?\s*(\d+(?:\s*(?:bis|ter|quater))?)$/)?.[1] ?? (soloNumero ? q : null);
+    const matches = ley.articulos.filter(a => {
+      if (numeroBuscado) return a.numero.toLowerCase().replace(/\s+/g, " ") === numeroBuscado.replace(/\s+/g, " ");
+      return (
+        a.texto.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").includes(q) ||
+        a.titulo.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").includes(q)
+      );
+    });
     return { ...ley, matches };
   }).filter(l => l.matches.length > 0);
 

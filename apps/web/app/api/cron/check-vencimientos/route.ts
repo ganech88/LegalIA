@@ -1,6 +1,7 @@
+import { timingSafeEqual } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { sendEmail, isEmailConfigured } from "@/lib/email/resend";
+import { sendEmail, isEmailConfigured, escapeHtml } from "@/lib/email/resend";
 
 /**
  * Cron diario (Vercel Cron — ver vercel.json) que avisa por email los
@@ -12,7 +13,10 @@ const DIAS_AVISO = 3;
 function autorizado(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
-  return request.headers.get("authorization") === `Bearer ${secret}`;
+  const provisto = request.headers.get("authorization") ?? "";
+  const a = Buffer.from(provisto);
+  const b = Buffer.from(`Bearer ${secret}`);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 export async function GET(request: Request) {
@@ -68,7 +72,7 @@ export async function GET(request: Request) {
     if (!email) continue;
 
     const filas = items
-      .map((v) => `<li><strong>${v.fecha_vencimiento}</strong> — ${v.titulo} (${v.tipo})</li>`)
+      .map((v) => `<li><strong>${escapeHtml(v.fecha_vencimiento)}</strong> — ${escapeHtml(v.titulo)} (${escapeHtml(v.tipo)})</li>`)
       .join("");
     const html = `
       <div style="font-family:Georgia,serif;color:#1a1a2e">

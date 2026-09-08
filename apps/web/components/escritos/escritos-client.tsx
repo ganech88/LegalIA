@@ -7,6 +7,8 @@ import type { EscritoTemplate } from "@/types";
 
 interface EscritosClientProps {
   templates: EscritoTemplate[];
+  /** Caso al que se vinculará el escrito (viene del expediente). */
+  casoId?: string;
 }
 
 function toRoman(n: number): string {
@@ -14,7 +16,8 @@ function toRoman(n: number): string {
   return r[n] ?? String(n);
 }
 
-export function EscritosClient({ templates }: EscritosClientProps) {
+export function EscritosClient({ templates, casoId }: EscritosClientProps) {
+  const sufijoCaso = casoId ? `?caso=${casoId}` : "";
   return (
     <div className="bg-paper-rules min-h-screen">
       {/* Topbar */}
@@ -70,7 +73,7 @@ export function EscritosClient({ templates }: EscritosClientProps) {
             {templates.map((t, i) => (
               <Link
                 key={t.id}
-                href={`/escritos/nuevo/${t.id}`}
+                href={`/escritos/nuevo/${t.id}${sufijoCaso}`}
                 className="group grid grid-cols-[auto_1fr_auto] items-center gap-4 border-b border-r border-border p-5 transition-colors hover:bg-[var(--brand-paper)]"
               >
                 <div className="w-8 text-center font-[var(--font-display)] text-2xl font-semibold italic text-[var(--brand-gold)]">

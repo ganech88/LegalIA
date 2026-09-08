@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldCheck, AlertTriangle, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { ShieldCheck, AlertTriangle, HelpCircle, ChevronDown, ChevronUp, Ban } from "lucide-react";
 import { useCitasVerificadas } from "@/lib/legal/use-citas";
 
 /**
@@ -34,6 +34,11 @@ export function CitasChat({ texto }: { texto: string }) {
             <AlertTriangle className="h-3 w-3" /> {resumen.no_verificables}
           </span>
         )}
+        {resumen.derogadas > 0 && (
+          <span className="flex items-center gap-0.5 text-red-800">
+            <Ban className="h-3 w-3" /> {resumen.derogadas}
+          </span>
+        )}
         <span>citas verificadas contra el corpus</span>
         {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
       </button>
@@ -46,6 +51,8 @@ export function CitasChat({ texto }: { texto: string }) {
                 <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0 text-emerald-700" />
               ) : c.estado === "dudosa" ? (
                 <HelpCircle className="mt-0.5 h-3 w-3 shrink-0 text-amber-700" />
+              ) : c.estado === "derogada" ? (
+                <Ban className="mt-0.5 h-3 w-3 shrink-0 text-red-800" />
               ) : (
                 <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-red-700" />
               )}

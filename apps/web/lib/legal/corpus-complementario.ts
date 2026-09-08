@@ -27,6 +27,30 @@ export const LCT_ARTICULOS_EXTRA: LeyArticulo[] = [
 /** Leyes complementarias que se suman al corpus. */
 export const LEYES_COMPLEMENTARIAS: Ley[] = [
   {
+    id: "l27802",
+    nombre: "Ley de Modernizacion Laboral",
+    nombre_corto: "Ley 27.802",
+    numero: "27.802",
+    area: "laboral",
+    descripcion: "Reforma laboral sancionada el 27/02/2026 y publicada en el B.O. el 06/03/2026. Modifica la LCT (arts. 231, 245, 276, 154, 197 bis, entre otros), crea el Fondo de Asistencia Laboral y fija reglas de actualizacion e intereses para creditos laborales. Vigencia parcialmente suspendida por cautelar del JNT N° 63 (30/03/2026) y restablecida por la CNAT Sala VIII (23/04/2026); impugnaciones en tramite.",
+    articulos: [
+      { numero: "55", titulo: "Juicios en tramite — intereses", texto: "Para los juicios laborales en tramite sin sentencia firme, los creditos devengaran la tasa pasiva del Banco Central de la Republica Argentina correspondiente al periodo; el resultado no podra superar la variacion del Indice de Precios al Consumidor (IPC) del INDEC con mas una tasa de interes del tres por ciento (3%) anual, ni ser inferior al sesenta y siete por ciento (67%) de dicho tope. Se aplica de oficio. NOTA: la CNAT Sala I (17/03/2026) y la Camara del Trabajo de Cordoba (10/03/2026) la declararon inconstitucional y aplicaron IPC + 3% pleno; las Salas III y IV la aplicaron. Conviene liquidar de ambas formas." },
+      { numero: "56", titulo: "Pago en cuotas de sentencias", texto: "Las condenas dinerarias en juicios laborales podran abonarse hasta en seis (6) cuotas mensuales, consecutivas y actualizadas conforme el art. 276 LCT; para las micro, pequenas y medianas empresas el maximo es de doce (12) cuotas. Las costas y honorarios de todos los profesionales intervinientes no excederan del veinticinco por ciento (25%) del monto de la sentencia o transaccion; si superaran ese porcentaje, se prorratearan." },
+      { numero: "58", titulo: "Fondo de Asistencia Laboral (FAL)", texto: "Se crea el Fondo de Asistencia Laboral con una contribucion obligatoria del empleador del uno por ciento (1%) sobre la remuneracion base previsional (dos coma cinco por ciento, 2,5%, para las PyMES), con carencia de seis (6) meses, destinado a prefinanciar las indemnizaciones de los arts. 232, 233 y 245 LCT. No sustituye ni reduce la obligacion del empleador de abonar la indemnizacion integra. Reglamentado por el decreto 408/2026; vigencia postergada al 01/11/2026." },
+    ],
+  },
+  {
+    id: "l27742",
+    nombre: "Ley Bases y Puntos de Partida para la Libertad de los Argentinos — Titulo V (Modernizacion Laboral)",
+    nombre_corto: "Ley 27.742",
+    numero: "27.742",
+    area: "laboral",
+    descripcion: "Publicada en el B.O. el 08/07/2024 (vigente desde el 09/07/2024). Su Titulo V modifico la LCT (arts. 2, 23, 29, 92 bis, 242, 245, 245 bis) y derogo el regimen de multas por empleo no registrado.",
+    articulos: [
+      { numero: "99", titulo: "Derogaciones", texto: "Deroganse los articulos 8, 9, 10, 11 y 15 de la ley 24.013; el articulo 1 de la ley 25.323; los articulos 43 a 48 de la ley 25.345 (entre ellos el art. 45, que habia incorporado la indemnizacion del art. 80 LCT por falta de entrega de certificados, y el art. 43, art. 132 bis LCT); y el articulo 50 de la ley 25.877. NOTA: el art. 2 de la ley 25.323 NO fue derogado y sigue vigente. La CNAT Sala II ('Coudakis c/ Clean 623', 29/05/2026) rechazo la inconstitucionalidad de estas derogaciones." },
+    ],
+  },
+  {
     id: "l25323",
     nombre: "Ley 25.323 — Incremento de indemnizaciones laborales",
     nombre_corto: "Ley 25.323",
@@ -34,7 +58,7 @@ export const LEYES_COMPLEMENTARIAS: Ley[] = [
     area: "laboral",
     descripcion: "Incrementa las indemnizaciones por despido en caso de relacion no registrada o de falta de pago que obligue a litigar.",
     articulos: [
-      { numero: "1", titulo: "Duplicacion por relacion no registrada", texto: "Las indemnizaciones previstas por el art. 245 LCT o las que en el futuro las reemplacen seran incrementadas al doble cuando se trate de una relacion laboral que al momento del despido no este registrada o lo este de modo deficiente." },
+      { numero: "1", titulo: "Duplicacion por relacion no registrada", texto: "Las indemnizaciones previstas por el art. 245 LCT o las que en el futuro las reemplacen seran incrementadas al doble cuando se trate de una relacion laboral que al momento del despido no este registrada o lo este de modo deficiente.", vigencia: { derogado_por: "art. 99 ley 27.742", desde: "2024-07-09" } },
       { numero: "2", titulo: "Incremento del 50% por falta de pago", texto: "Cuando el empleador, fehacientemente intimado por el trabajador, no le abonare las indemnizaciones previstas en los arts. 232, 233 y 245 LCT y, consecuentemente, lo obligare a iniciar acciones judiciales o cualquier instancia previa de caracter obligatorio para percibirlas, estas seran incrementadas en un 50%. Los jueces podran reducir prudencialmente el incremento hasta su eximicion si hubieran existido causas que justificaren la conducta del empleador." },
     ],
   },
@@ -46,11 +70,11 @@ export const LEYES_COMPLEMENTARIAS: Ley[] = [
     area: "laboral",
     descripcion: "Regula el empleo y sanciona el trabajo no registrado con indemnizaciones a favor del trabajador. Verificar vigencia de los arts. 8 a 15 tras las reformas laborales recientes.",
     articulos: [
-      { numero: "8", titulo: "Empleo no registrado", texto: "El empleador que no registrare una relacion laboral abonara al trabajador afectado una indemnizacion equivalente a una cuarta parte de las remuneraciones devengadas desde el comienzo de la vinculacion, computadas a valores reajustados. VERIFICAR VIGENCIA: este regimen fue alcanzado por reformas laborales recientes." },
-      { numero: "9", titulo: "Fecha de ingreso falsa", texto: "El empleador que consignare en la documentacion laboral una fecha de ingreso posterior a la real abonara una indemnizacion equivalente a la cuarta parte de las remuneraciones devengadas desde la fecha de ingreso real hasta la fecha falsamente consignada. VERIFICAR VIGENCIA tras reformas recientes." },
-      { numero: "10", titulo: "Remuneracion menor a la real", texto: "El empleador que consignare en la documentacion laboral una remuneracion menor que la percibida abonara una indemnizacion equivalente a la cuarta parte del importe de las remuneraciones devengadas y no registradas. VERIFICAR VIGENCIA tras reformas recientes." },
-      { numero: "11", titulo: "Requisitos de procedencia", texto: "Las indemnizaciones de los arts. 8, 9 y 10 proceden cuando el trabajador o la asociacion sindical intime al empleador de modo fehaciente a fin de que regularice la situacion, y remita copia del requerimiento a la AFIP dentro de las 24 horas habiles siguientes." },
-      { numero: "15", titulo: "Despido posterior a la intimacion", texto: "Si el empleador despidiere sin causa justificada al trabajador dentro de los 2 anos desde que se le hubiere cursado de modo justificado la intimacion del art. 11, el trabajador tendra derecho a percibir el doble de las indemnizaciones que le hubieren correspondido por el despido. VERIFICAR VIGENCIA tras reformas recientes." },
+      { numero: "8", titulo: "Empleo no registrado", texto: "El empleador que no registrare una relacion laboral abonara al trabajador afectado una indemnizacion equivalente a una cuarta parte de las remuneraciones devengadas desde el comienzo de la vinculacion, computadas a valores reajustados. DEROGADO por el art. 99 de la ley 27.742 (desde el 09/07/2024).", vigencia: { derogado_por: "art. 99 ley 27.742", desde: "2024-07-09" } },
+      { numero: "9", titulo: "Fecha de ingreso falsa", texto: "El empleador que consignare en la documentacion laboral una fecha de ingreso posterior a la real abonara una indemnizacion equivalente a la cuarta parte de las remuneraciones devengadas desde la fecha de ingreso real hasta la fecha falsamente consignada. DEROGADO por el art. 99 de la ley 27.742 (desde el 09/07/2024).", vigencia: { derogado_por: "art. 99 ley 27.742", desde: "2024-07-09" } },
+      { numero: "10", titulo: "Remuneracion menor a la real", texto: "El empleador que consignare en la documentacion laboral una remuneracion menor que la percibida abonara una indemnizacion equivalente a la cuarta parte del importe de las remuneraciones devengadas y no registradas. DEROGADO por el art. 99 de la ley 27.742 (desde el 09/07/2024).", vigencia: { derogado_por: "art. 99 ley 27.742", desde: "2024-07-09" } },
+      { numero: "11", titulo: "Requisitos de procedencia", texto: "Las indemnizaciones de los arts. 8, 9 y 10 proceden cuando el trabajador o la asociacion sindical intime al empleador de modo fehaciente a fin de que regularice la situacion, y remita copia del requerimiento a la AFIP dentro de las 24 horas habiles siguientes.", vigencia: { derogado_por: "art. 99 ley 27.742", desde: "2024-07-09" } },
+      { numero: "15", titulo: "Despido posterior a la intimacion", texto: "Si el empleador despidiere sin causa justificada al trabajador dentro de los 2 anos desde que se le hubiere cursado de modo justificado la intimacion del art. 11, el trabajador tendra derecho a percibir el doble de las indemnizaciones que le hubieren correspondido por el despido. DEROGADO por el art. 99 de la ley 27.742 (desde el 09/07/2024).", vigencia: { derogado_por: "art. 99 ley 27.742", desde: "2024-07-09" } },
     ],
   },
   {
@@ -61,7 +85,7 @@ export const LEYES_COMPLEMENTARIAS: Ley[] = [
     area: "laboral",
     descripcion: "Su art. 45 agrega al art. 80 LCT la indemnizacion por falta de entrega de los certificados de trabajo.",
     articulos: [
-      { numero: "45", titulo: "Sancion por falta de entrega de certificados (art. 80 LCT)", texto: "Si el empleador no hiciera entrega de la constancia o del certificado de trabajo previstos en el art. 80 LCT dentro de los 2 dias habiles computados a partir del dia siguiente a la recepcion del requerimiento fehaciente del trabajador, sera sancionado con una indemnizacion a favor de este ultimo equivalente a 3 veces la mejor remuneracion mensual, normal y habitual percibida durante el ultimo ano o durante el tiempo de prestacion de servicios si este fuere menor." },
+      { numero: "45", titulo: "Sancion por falta de entrega de certificados (art. 80 LCT)", texto: "Si el empleador no hiciera entrega de la constancia o del certificado de trabajo previstos en el art. 80 LCT dentro de los 2 dias habiles computados a partir del dia siguiente a la recepcion del requerimiento fehaciente del trabajador, sera sancionado con una indemnizacion a favor de este ultimo equivalente a 3 veces la mejor remuneracion mensual, normal y habitual percibida durante el ultimo ano o durante el tiempo de prestacion de servicios si este fuere menor.", vigencia: { derogado_por: "art. 99 ley 27.742", desde: "2024-07-09" } },
     ],
   },
   {

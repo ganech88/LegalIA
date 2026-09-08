@@ -6,11 +6,13 @@
  *  - verificada:     el artículo/fallo existe en el corpus y coincide.
  *  - dudosa:         hay una coincidencia parcial (fallo no confirmado, etc.).
  *  - no_verificable: la fuente no está en el corpus — el abogado DEBE revisarla.
+ *  - derogada:       la norma existe pero fue derogada (leyes 27.742/27.802):
+ *                    citarla como vigente es un error, no una duda.
  */
 
 import { LEYES, JURISPRUDENCIA, type Ley } from "./corpus";
 
-export type EstadoCita = "verificada" | "dudosa" | "no_verificable";
+export type EstadoCita = "verificada" | "dudosa" | "no_verificable" | "derogada";
 
 export interface CitaVerificada {
   /** Texto de la cita tal como aparece en el escrito. */
@@ -67,6 +69,8 @@ const ALIAS_LEYES: Record<string, string[]> = {
   l27555: ["ley 27.555", "ley 27555", "27.555", "ley de teletrabajo"],
   l23592: ["ley 23.592", "ley 23592", "23.592", "ley antidiscriminatoria"],
   l26773: ["ley 26.773", "ley 26773", "26.773"],
+  l27742: ["ley 27.742", "ley 27742", "27.742", "ley bases"],
+  l27802: ["ley 27.802", "ley 27802", "27.802", "ley de modernizacion laboral", "ley de modernización laboral", "modernizacion laboral", "modernización laboral"],
   cn: ["constitucion nacional", "constitución nacional", "c.n."],
 };
 
@@ -102,7 +106,7 @@ function verificarArticulos(texto: string): CitaVerificada[] {
 
   // Captura "art(s)/artículo(s) <números>" + hasta 60 caracteres de contexto a derecha.
   // El contexto admite "." solo dentro de números (p. ej. "Ley 25.323") para no cortar la oración.
-  const re = /art(?:iculo|ículo)?s?\.?\s+((?:\d+\s*(?:bis|ter|quater)?\s*[,y]?\s*)+)((?:\.(?=\d)|[^.\n]){0,80})/gi;
+  const re = /art(?:iculo|ículo)?s?\.?\s+((?:\d+\s*(?:bis|ter|quater)?\s*[,y]?\s*)+)((?:\.(?=\d)|(?!art(?:iculo|ículo)?s?\.?\s+\d)[^.\n]){0,80})/gi;
   let m: RegExpExecArray | null;
 
   while ((m = re.exec(texto)) !== null) {
@@ -136,7 +140,15 @@ function verificarArticulos(texto: string): CitaVerificada[] {
       const articulo = ley.articulos.find(
         (a) => normalizar(a.numero) === normalizar(numero),
       );
-      if (articulo) {
+      if (articulo?.vigencia) {
+        resultados.push({
+          cita: citaTexto,
+          tipo: "articulo",
+          estado: "derogada",
+          detalle: `${articulo.titulo} — DEROGADO por ${articulo.vigencia.derogado_por} desde el ${articulo.vigencia.desde.split("-").reverse().join("/")}. Solo aplica a distractos anteriores; si lo mantenés, aclaralo.`,
+          fuente: `${ley.nombre_corto} ${ley.numero}, art. ${articulo.numero}`,
+        });
+      } else if (articulo) {
         resultados.push({
           cita: citaTexto,
           tipo: "articulo",
@@ -217,7 +229,7 @@ function verificarFallos(texto: string): CitaVerificada[] {
 
 export interface ResultadoVerificacion {
   citas: CitaVerificada[];
-  resumen: { verificadas: number; dudosas: number; no_verificables: number };
+  resumen: { verificadas: number; dudosas: number; no_verificables: number; derogadas: number };
 }
 
 export function resumirCitas(citas: CitaVerificada[]): ResultadoVerificacion["resumen"] {
@@ -225,6 +237,7 @@ export function resumirCitas(citas: CitaVerificada[]): ResultadoVerificacion["re
     verificadas: citas.filter((c) => c.estado === "verificada").length,
     dudosas: citas.filter((c) => c.estado === "dudosa").length,
     no_verificables: citas.filter((c) => c.estado === "no_verificable").length,
+    derogadas: citas.filter((c) => c.estado === "derogada").length,
   };
 }
 

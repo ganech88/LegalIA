@@ -37,10 +37,26 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://www.legaliapp.com"),
-  title: "LegalIA — Asistente IA para Abogados Argentinos",
+  title: {
+    default: "LegalIA — Escritos, calculadoras y plazos para abogados argentinos",
+    template: "%s | LegalIA",
+  },
   description:
-    "Generador de escritos judiciales y asistente legal con inteligencia artificial. Especializado en derecho argentino.",
+    "Generador de escritos judiciales con citas verificadas contra la ley completa, calculadoras laborales actualizadas a la ley 27.802, agenda de plazos y portal del cliente. Hecho en Argentina, en pesos.",
   manifest: "/manifest.json",
+  openGraph: {
+    type: "website",
+    locale: "es_AR",
+    siteName: "LegalIA",
+    title: "LegalIA — Escritos, calculadoras y plazos para abogados argentinos",
+    description:
+      "Escritos con citas verificadas, calculadoras actualizadas a la reforma laboral 2026, agenda de plazos y portal del cliente.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LegalIA — Escritos, calculadoras y plazos para abogados argentinos",
+    description: "Escritos con citas verificadas, calculadoras actualizadas a la reforma laboral 2026, agenda de plazos y portal del cliente.",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

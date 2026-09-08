@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldCheck, AlertTriangle, HelpCircle, X } from "lucide-react";
+import { ShieldCheck, AlertTriangle, HelpCircle, X, Ban } from "lucide-react";
 import { type CitaVerificada } from "@/lib/legal/citas";
 import { useCitasVerificadas } from "@/lib/legal/use-citas";
 
@@ -15,6 +15,7 @@ const ESTILOS: Record<CitaVerificada["estado"], { icon: typeof ShieldCheck; colo
   verificada: { icon: ShieldCheck, color: "text-emerald-700 bg-emerald-50 border-emerald-200", label: "Verificada" },
   dudosa: { icon: HelpCircle, color: "text-amber-700 bg-amber-50 border-amber-200", label: "Verificar cita exacta" },
   no_verificable: { icon: AlertTriangle, color: "text-red-700 bg-red-50 border-red-200", label: "Revisar antes de presentar" },
+  derogada: { icon: Ban, color: "text-red-800 bg-red-100 border-red-300", label: "Norma derogada" },
 };
 
 export function PanelCitas({ texto, onClose }: { texto: string; onClose: () => void }) {
@@ -24,14 +25,14 @@ export function PanelCitas({ texto, onClose }: { texto: string; onClose: () => v
   const visibles = filtro === "todas" ? citas : citas.filter((c) => c.estado !== "verificada");
 
   return (
-    <div className="flex h-full w-[340px] shrink-0 flex-col border-l border-border bg-white">
+    <div className="absolute inset-y-0 right-0 z-10 flex h-full w-full flex-col border-l border-border bg-white shadow-xl md:static md:w-[340px] md:shrink-0 md:shadow-none">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div>
           <h3 className="font-[var(--font-display)] text-[13px] font-semibold text-[var(--brand-navy)]">
             Citas verificadas
           </h3>
           <p className="text-[10px] text-[var(--brand-mute)]">
-            Contrastadas contra el corpus legal de LegalIA
+            Contra la ley completa y las reformas 2024-2026
           </p>
         </div>
         <button onClick={onClose} className="rounded p-1 hover:bg-black/5" title="Cerrar panel">
@@ -49,6 +50,11 @@ export function PanelCitas({ texto, onClose }: { texto: string; onClose: () => v
         <span className="flex items-center gap-1 text-red-700">
           <AlertTriangle className="h-3 w-3" /> {resumen.no_verificables}
         </span>
+        {resumen.derogadas > 0 && (
+          <span className="flex items-center gap-1 text-red-800" title="Normas derogadas citadas como vigentes">
+            <Ban className="h-3 w-3" /> {resumen.derogadas}
+          </span>
+        )}
         <div className="ml-auto flex gap-1">
           <button
             onClick={() => setFiltro("todas")}

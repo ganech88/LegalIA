@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -13,6 +13,23 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+
+  // ?error= del callback de auth y ?next= del middleware (leídos en el cliente
+  // para no convertir la página en dinámica ni envolverla en Suspense).
+  const [next, setNext] = useState("/dashboard");
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        const sp = new URLSearchParams(window.location.search);
+        if (sp.get("error") === "auth_callback_failed") {
+          setError("El enlace de acceso expiró o ya fue usado. Ingresá con tu contraseña o pedí uno nuevo.");
+        }
+        const n = sp.get("next");
+        if (n && n.startsWith("/") && !n.startsWith("//")) setNext(n);
+      } catch { /* ignore */ }
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -34,7 +51,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/dashboard");
+    router.push(next);
     router.refresh();
   }
 

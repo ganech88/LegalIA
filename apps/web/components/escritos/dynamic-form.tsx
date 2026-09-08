@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,33 +14,65 @@ import type { FormField, EscritoTemplate } from "@/types";
 interface DynamicFormProps {
   initialValues?: Record<string, unknown>;
   template: EscritoTemplate;
+  /** Caso al que se vincula el escrito generado (expediente vivo). */
+  casoId?: string;
 }
 
-export function DynamicForm({ template, initialValues }: DynamicFormProps) {
+export function DynamicForm({ template, initialValues, casoId }: DynamicFormProps) {
   const [values, setValues] = useState<Record<string, unknown>>(initialValues ?? {});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState(false);
+  const [segundos, setSegundos] = useState(0);
+  const [contenidoSinGuardar, setContenidoSinGuardar] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const router = useRouter();
+  const draftKey = `legalia:draft:${template.id}`;
 
-  // Prellenado desde la calculadora (sessionStorage): solo campos de este template.
+  // Prellenado desde la calculadora (sessionStorage): solo campos de este
+  // template + el anexo de liquidación (que viaja aunque no sea un campo).
+  // Si no hay prellenado, restauramos el borrador del formulario (un refresh
+  // ya no borra 10 minutos de carga).
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("legalia:prefill");
-      if (!raw) return;
-      const data = JSON.parse(raw) as Record<string, unknown>;
-      const fieldNames = new Set((template.campos_requeridos.fields as FormField[]).map((f) => f.name));
-      const seed: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(data)) {
-        if (fieldNames.has(k)) seed[k] = v;
+      if (raw) {
+        const data = JSON.parse(raw) as Record<string, unknown>;
+        const fieldNames = new Set((template.campos_requeridos.fields as FormField[]).map((f) => f.name));
+        const seed: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(data)) {
+          if (fieldNames.has(k) || k === "anexo_liquidacion") seed[k] = v;
+        }
+        const consumido = Object.keys(seed).some((k) => k !== "anexo_liquidacion");
+        if (consumido) {
+          setValues((prev) => ({ ...seed, ...prev }));
+          setPrefilled(true);
+          // Solo se borra cuando ESTE template lo usó: abrir otra plantilla no lo pierde.
+          sessionStorage.removeItem("legalia:prefill");
+          return;
+        }
       }
-      if (Object.keys(seed).length > 0) {
-        setValues((prev) => ({ ...seed, ...prev }));
-        setPrefilled(true);
+      const draft = sessionStorage.getItem(draftKey);
+      if (draft) {
+        const data = JSON.parse(draft) as Record<string, unknown>;
+        setValues((prev) => (Object.keys(prev).length > 0 ? prev : data));
       }
-      sessionStorage.removeItem("legalia:prefill");
     } catch { /* ignore */ }
-  }, [template]);
+  }, [template, draftKey]);
+
+  // Borrador automático del formulario.
+  useEffect(() => {
+    try {
+      if (Object.keys(values).length > 0) sessionStorage.setItem(draftKey, JSON.stringify(values));
+    } catch { /* ignore */ }
+  }, [values, draftKey]);
+
+  // Contador visible mientras genera (60-90 s es normal con el modelo grande).
+  useEffect(() => {
+    if (!loading) { setSegundos(0); return; }
+    const t = setInterval(() => setSegundos((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [loading]);
 
   function setValue(name: string, value: unknown) {
     setValues((prev) => ({ ...prev, [name]: value }));
@@ -57,25 +90,46 @@ export function DynamicForm({ template, initialValues }: DynamicFormProps) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setContenidoSinGuardar(null);
 
-    const res = await fetch("/api/generate-escrito", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        template_id: template.id,
-        datos_caso: values,
-      }),
-    });
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 150_000);
 
-    if (!res.ok) {
+    try {
+      const res = await fetch("/api/generate-escrito", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          template_id: template.id,
+          datos_caso: values,
+          ...(casoId ? { caso_id: casoId } : {}),
+        }),
+        signal: controller.signal,
+      });
+
       const data = await res.json().catch(() => ({}));
-      setError(data.error || "Error al generar el escrito. Intentá de nuevo.");
-      setLoading(false);
-      return;
-    }
+      if (!res.ok) {
+        setError(data.error || "Error al generar el escrito. Intentá de nuevo.");
+        if (typeof data.contenido === "string") setContenidoSinGuardar(data.contenido);
+        setLoading(false);
+        return;
+      }
 
-    const data = await res.json();
-    router.push(`/escritos/${data.id}`);
+      try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
+      router.push(`/escritos/${data.id}`);
+    } catch (err) {
+      const abortado = err instanceof DOMException && err.name === "AbortError";
+      setError(
+        abortado
+          ? "La generación se canceló o tardó demasiado. Si se descontó un escrito de tu cuota sin resultado, se te devuelve automáticamente."
+          : "No pudimos conectarnos con el servidor. Revisá tu conexión e intentá de nuevo.",
+      );
+      setLoading(false);
+    } finally {
+      clearTimeout(timeout);
+      abortRef.current = null;
+    }
   }
 
   const fields: FormField[] = template.campos_requeridos.fields;
@@ -174,9 +228,29 @@ export function DynamicForm({ template, initialValues }: DynamicFormProps) {
         </div>
       ))}
 
+      {contenidoSinGuardar && (
+        <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <p>El escrito se generó pero no pudo guardarse. Copialo ahora para no perderlo:</p>
+          <Textarea readOnly value={contenidoSinGuardar} rows={8} className="bg-white font-mono text-[12px]" />
+          <Button type="button" variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(contenidoSinGuardar).then(() => toast.success("Escrito copiado")).catch(() => toast.error("No se pudo copiar"))}>
+            Copiar escrito
+          </Button>
+        </div>
+      )}
+
       <Button type="submit" className="w-full" disabled={loading} size="lg">
-        {loading ? "Generando escrito..." : "Generar escrito"}
+        {loading ? `Generando escrito… ${segundos}s` : "Generar escrito"}
       </Button>
+      {loading ? (
+        <div className="flex items-center justify-between text-[12px] text-muted-foreground">
+          <span>Redactando con el modelo principal: suele tardar entre 45 y 90 segundos. Podés esperar en esta pestaña.</span>
+          <button type="button" className="underline" onClick={() => abortRef.current?.abort()}>Cancelar</button>
+        </div>
+      ) : (
+        <p className="text-[12px] text-muted-foreground">
+          Los datos se guardan como borrador en este navegador hasta que generes el escrito.
+        </p>
+      )}
     </form>
   );
 }

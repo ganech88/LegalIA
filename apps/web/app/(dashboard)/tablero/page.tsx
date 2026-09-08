@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { CalendarClock, FolderOpen, FileText, MessageSquare } from "lucide-react";
+import { PageShell } from "@/components/layout/page-shell";
 
 /**
  * Tablero del estudio: la vista del socio. Casos por estado, vencimientos de
@@ -42,6 +43,7 @@ export default async function TableroPage() {
   const fmt = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
 
   return (
+    <PageShell crumbs={[{ label: "Workspace" }, { label: "Tablero" }]}>
     <div className="space-y-8">
       <header>
         <p className="masthead-meta mb-2"><span>TABLERO DEL ESTUDIO</span></p>
@@ -99,6 +101,7 @@ export default async function TableroPage() {
         </div>
       </section>
     </div>
+    </PageShell>
   );
 }
 

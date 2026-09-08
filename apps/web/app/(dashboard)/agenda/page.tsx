@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 interface Vencimiento {
   id: string;
@@ -57,13 +58,24 @@ export default function AgendaPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // ?caso=<id> desde el expediente: abre el formulario con el caso ya elegido.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        const c = new URLSearchParams(window.location.search).get("caso");
+        if (c) { setCasoId(c); setShowForm(true); }
+      } catch { /* ignore */ }
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+
   async function crear(e: React.FormEvent) {
     e.preventDefault();
     if (!titulo || !fecha) return;
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSaving(false); return; }
-    await supabase.from("vencimientos").insert({
+    const { error } = await supabase.from("vencimientos").insert({
       user_id: user.id,
       titulo,
       fecha_vencimiento: fecha,
@@ -71,6 +83,8 @@ export default function AgendaPage() {
       caso_id: casoId || null,
       descripcion: descripcion || null,
     });
+    if (error) { toast.error("No se pudo guardar el vencimiento."); setSaving(false); return; }
+    toast.success("Vencimiento agendado");
     setTitulo(""); setFecha(""); setTipo("plazo_procesal"); setCasoId(""); setDescripcion("");
     setShowForm(false);
     setSaving(false);
@@ -78,11 +92,15 @@ export default function AgendaPage() {
   }
 
   async function marcarCumplido(id: string) {
-    await supabase.from("vencimientos").update({ estado: "cumplido", updated_at: new Date().toISOString() }).eq("id", id);
+    const { error } = await supabase.from("vencimientos").update({ estado: "cumplido", updated_at: new Date().toISOString() }).eq("id", id);
+    if (error) toast.error("No se pudo actualizar el vencimiento.");
     load();
   }
   async function eliminar(id: string) {
-    await supabase.from("vencimientos").delete().eq("id", id);
+    const v = vencimientos.find((x) => x.id === id);
+    if (!window.confirm(`¿Eliminar "${v?.titulo ?? "este vencimiento"}"? Esta acción no se puede deshacer.`)) return;
+    const { error } = await supabase.from("vencimientos").delete().eq("id", id);
+    if (error) toast.error("No se pudo eliminar el vencimiento.");
     load();
   }
 

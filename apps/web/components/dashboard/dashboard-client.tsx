@@ -33,6 +33,7 @@ interface DashboardClientProps {
   consultasLimit: number;
   casosActivos: number;
   demoTemplateId?: string | null;
+  vencimientos?: { id: string; titulo: string; fecha: string }[];
   userName: string;
   casos: CasoItem[];
   actividad: ActivityItem[];
@@ -71,6 +72,7 @@ export function DashboardClient({
   demoTemplateId,
   casos,
   actividad,
+  vencimientos,
 }: DashboardClientProps) {
   const [chatInput, setChatInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,7 +84,6 @@ export function DashboardClient({
     year: "numeric",
   });
 
-  const tiempoAhorrado = Math.round(escritosUsados * 0.4 + consultasUsadas * 0.05);
 
   return (
     <div className="bg-paper-rules min-h-screen flex flex-col">
@@ -121,7 +122,7 @@ export function DashboardClient({
             <em className="italic text-[var(--brand-gold)]">{firstName ? `${firstName}.` : "abogado/a."}</em>
           </h1>
           <p className="mt-3 max-w-[700px] text-[14px] leading-[1.6] text-[var(--brand-ink-2)] font-[var(--font-serif)]">
-            Hoy tenes <strong>{escritosUsados} escritos en borrador</strong> y <strong>{casosActivos} casos activos</strong>.
+            Este mes generaste <strong>{escritosUsados} escritos</strong> y tenés <strong>{casosActivos} casos activos</strong>.
             El asistente IA esta disponible con el corpus actualizado al {new Date().toLocaleDateString("es-AR")}.
           </p>
         </header>
@@ -151,7 +152,7 @@ export function DashboardClient({
               <a href="/asistente" className="group rounded border border-border bg-white p-4 transition-shadow hover:shadow-md">
                 <p className="text-[13px] font-bold text-[var(--brand-navy)]">Preguntale al asistente →</p>
                 <p className="mt-1 text-[11.5px] leading-snug text-[var(--brand-mute)]">
-                  Probá: "¿qué plazo tengo para contestar una demanda en CABA?" — responde con artículos reales.
+                  Probá: &ldquo;¿qué plazo tengo para contestar una demanda en CABA?&rdquo; — responde con artículos reales.
                 </p>
               </a>
             </div>
@@ -163,7 +164,7 @@ export function DashboardClient({
           <StatCard num="I" label="Escritos / mes" value={escritosUsados} sub={`de ${escritosLimit === Infinity ? "∞" : escritosLimit} en tu plan`} />
           <StatCard num="II" label="Consultas IA" value={consultasUsadas} sub={`de ${consultasLimit === Infinity ? "∞" : consultasLimit} este mes`} />
           <StatCard num="III" label="Casos activos" value={casosActivos} sub={casosActivos > 0 ? `${casosActivos} expedientes` : "sin expedientes"} accent />
-          <StatCard num="IV" label="Tiempo ahorrado" value={`${tiempoAhorrado}h`} sub="estimado por IA" />
+          <StatCard num="IV" label="Vencen en 7 días" value={(vencimientos ?? []).length} sub={(vencimientos ?? []).length > 0 ? `próximo: ${(vencimientos ?? [])[0].fecha.split("-").reverse().join("/")}` : "sin plazos próximos"} accent={(vencimientos ?? []).length > 0} />
         </div>
 
         {/* AI Assistant + Plantillas row */}
@@ -205,9 +206,9 @@ export function DashboardClient({
                   onChange={e => setChatInput(e.target.value)}
                   placeholder="Consulta sobre legislacion, jurisprudencia..."
                   className="flex-1 bg-transparent text-[12px] outline-none placeholder:text-[var(--brand-mute)]"
-                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); window.location.href = "/asistente"; } }}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); window.location.href = chatInput.trim() ? `/asistente?q=${encodeURIComponent(chatInput.trim())}` : "/asistente"; } }}
                 />
-                <Link href="/asistente" className="flex h-7 w-7 items-center justify-center rounded bg-[var(--brand-navy)] text-[var(--brand-gold)]">
+                <Link href={chatInput.trim() ? `/asistente?q=${encodeURIComponent(chatInput.trim())}` : "/asistente"} className="flex h-7 w-7 items-center justify-center rounded bg-[var(--brand-navy)] text-[var(--brand-gold)]">
                   <Send className="h-3.5 w-3.5" />
                 </Link>
               </div>

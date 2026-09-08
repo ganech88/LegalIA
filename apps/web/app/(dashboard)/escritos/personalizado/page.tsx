@@ -17,6 +17,7 @@ import {
 import { FUEROS, JURISDICCIONES } from "@/types";
 import { ArrowLeft, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { PageShell } from "@/components/layout/page-shell";
 
 export default function EscritoPersonalizadoPage() {
   const router = useRouter();
@@ -60,6 +61,7 @@ export default function EscritoPersonalizadoPage() {
   }
 
   return (
+    <PageShell crumbs={[{ label: "Escritos", href: "/escritos" }, { label: "Personalizado" }]}>
     <div className="space-y-6">
       <div>
         <Link
@@ -181,5 +183,6 @@ export default function EscritoPersonalizadoPage() {
         </CardContent>
       </Card>
     </div>
+    </PageShell>
   );
 }

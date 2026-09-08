@@ -37,7 +37,7 @@ export function PanelChecklist({
   const visibles = soloProblemas ? resultados.filter((x) => x.nivel !== "ok") : resultados;
 
   return (
-    <div className="flex h-full w-[340px] shrink-0 flex-col border-l border-border bg-white">
+    <div className="absolute inset-y-0 right-0 z-10 flex h-full w-full flex-col border-l border-border bg-white shadow-xl md:static md:w-[340px] md:shrink-0 md:shadow-none">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div>
           <h3 className="font-[var(--font-display)] text-[13px] font-semibold text-[var(--brand-navy)]">

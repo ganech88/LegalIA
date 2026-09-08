@@ -19,12 +19,18 @@ import {
 } from "./citas";
 
 export function useCitasVerificadas(texto: string): ResultadoVerificacion {
-  const local = useMemo(() => verificarCitas(texto), [texto]);
-  const [mejoradas, setMejoradas] = useState<CitaVerificada[] | null>(null);
+  // Debounce: el editor cambia en cada tecla; sin esto se disparaba una
+  // consulta a Supabase por pulsación.
+  const [textoEstable, setTextoEstable] = useState(texto);
+  useEffect(() => {
+    const t = setTimeout(() => setTextoEstable(texto), 600);
+    return () => clearTimeout(t);
+  }, [texto]);
+  const local = useMemo(() => verificarCitas(textoEstable), [textoEstable]);
+  const [mejoradas, setMejoradas] = useState<{ base: string; citas: CitaVerificada[] } | null>(null);
 
   useEffect(() => {
-    setMejoradas(null);
-    const pendientes = local.citas.filter((c) => c.estado !== "verificada" && c.lookup);
+    const pendientes = local.citas.filter((c) => c.estado !== "verificada" && c.estado !== "derogada" && c.lookup);
     if (pendientes.length === 0) return;
 
     let cancelado = false;
@@ -39,9 +45,10 @@ export function useCitasVerificadas(texto: string): ResultadoVerificacion {
       .in("article_number", numeros)
       .then(({ data }) => {
         if (cancelado || !data || data.length === 0) return;
-        setMejoradas(
-          local.citas.map((c) => {
-            if (c.estado === "verificada" || !c.lookup) return c;
+        setMejoradas({
+          base: textoEstable,
+          citas: local.citas.map((c) => {
+            if (c.estado === "verificada" || c.estado === "derogada" || !c.lookup) return c;
             const hit = data.find(
               (r) =>
                 c.lookup!.sources.includes(r.source_name) &&
@@ -55,14 +62,14 @@ export function useCitasVerificadas(texto: string): ResultadoVerificacion {
               fuente: `${hit.source_name}, art. ${hit.article_number}`,
             };
           }),
-        );
+        });
       });
 
     return () => {
       cancelado = true;
     };
-  }, [local]);
+  }, [local, textoEstable]);
 
-  const citas = mejoradas ?? local.citas;
+  const citas = mejoradas && mejoradas.base === textoEstable ? mejoradas.citas : local.citas;
   return { citas, resumen: resumirCitas(citas) };
 }

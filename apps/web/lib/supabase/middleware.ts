@@ -44,6 +44,9 @@ export async function updateSession(request: NextRequest) {
     path === "/sitemap.xml" ||
     path === "/terminos" ||
     path === "/privacidad" ||
+    path === "/offline" || // página offline de la PWA (el SW la precachea sin sesión)
+    path === "/manifest.json" ||
+    path === "/sw.js" ||
     path.startsWith("/herramientas") || // calculadoras públicas (SEO / adquisición)
     path.startsWith("/portal/") || // portal del cliente (token no adivinable)
 
@@ -56,8 +59,14 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (!user && !isAuthPage) {
+    // Las APIs responden 401 (un redirect 307 a /login rompe los fetch del cliente).
+    if (path.startsWith("/api/")) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    // Volver a donde iba después de loguearse.
+    if (path !== "/dashboard") url.searchParams.set("next", path + request.nextUrl.search);
     return NextResponse.redirect(url);
   }
 
@@ -67,14 +76,18 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && !isOnboarding && !isAuthPage) {
+  // El onboarding se exige una sola vez: cuando falta la jurisdicción principal
+  // (el nombre ya viene del registro, así que antes nunca se forzaba). Las
+  // rutas /api no se redirigen.
+  if (user && !isOnboarding && !isAuthPage && !path.startsWith("/api/")) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name")
+      .select("full_name, jurisdiccion_principal, created_at")
       .eq("id", user.id)
       .single();
 
-    if (!profile?.full_name) {
+    const cuentaNueva = profile?.created_at ? Date.now() - new Date(profile.created_at).getTime() < 24 * 60 * 60 * 1000 : false;
+    if (!profile?.full_name || (cuentaNueva && !profile?.jurisdiccion_principal)) {
       const url = request.nextUrl.clone();
       url.pathname = "/onboarding";
       return NextResponse.redirect(url);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import {
@@ -31,6 +31,15 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
+
+  // El nombre ya se cargó en el registro (raw_user_meta_data → profiles):
+  // no se lo pedimos de nuevo vacío.
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      const meta = (user?.user_metadata ?? {}) as { full_name?: string };
+      if (meta.full_name) setFullName((prev) => prev || meta.full_name!);
+    });
+  }, [supabase]);
 
   function toggleEspecialidad(esp: Especialidad) {
     setEspecialidades((prev) =>

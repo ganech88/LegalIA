@@ -8,6 +8,7 @@ import {
   formatCurrency,
   type IndemnizacionResult,
 } from "@/lib/legal/calculadoras";
+import { regimenPorFecha, etiquetaRegimen } from "@/lib/legal/regimen";
 
 /**
  * Calculadora pública de indemnización por despido (art. 245 LCT).
@@ -18,9 +19,10 @@ export function CalcIndemnizacionPublica() {
   const [fechaIngreso, setFechaIngreso] = useState("");
   const [fechaDespido, setFechaDespido] = useState("");
   const [ley25323art2, setLey25323art2] = useState(false);
-  const [multaArt80, setMultaArt80] = useState(false);
+  const [enPrueba, setEnPrueba] = useState(false);
   const [result, setResult] = useState<IndemnizacionResult | null>(null);
   const [copiado, setCopiado] = useState(false);
+  const regimen = regimenPorFecha(fechaDespido);
 
   function handleCalcular(e: React.FormEvent) {
     e.preventDefault();
@@ -30,7 +32,7 @@ export function CalcIndemnizacionPublica() {
         fecha_ingreso: fechaIngreso,
         fecha_despido: fechaDespido,
         ley_25323_art2: ley25323art2,
-        multa_art_80: multaArt80,
+        en_periodo_prueba: enPrueba,
       }),
     );
   }
@@ -74,10 +76,18 @@ export function CalcIndemnizacionPublica() {
             <span className="text-[13px] text-[var(--brand-ink-2)]">Hubo intimación y no pagaron (Ley 25.323 art. 2, +50%)</span>
           </label>
           <label className="flex items-center gap-2.5 cursor-pointer">
-            <input type="checkbox" checked={multaArt80} onChange={(e) => setMultaArt80(e.target.checked)} className="h-4 w-4" />
-            <span className="text-[13px] text-[var(--brand-ink-2)]">No entregaron certificados de trabajo (art. 80 LCT)</span>
+            <input type="checkbox" checked={enPrueba} onChange={(e) => setEnPrueba(e.target.checked)} className="h-4 w-4" />
+            <span className="text-[13px] text-[var(--brand-ink-2)]">Estaba en período de prueba ({regimen.periodo_prueba_meses} meses)</span>
           </label>
         </div>
+        {fechaDespido && (
+          <p className="rounded border border-[var(--brand-navy)]/20 bg-[var(--brand-navy)]/5 px-3 py-2 text-[12px] text-[var(--brand-ink-2)]">
+            <strong className="text-[var(--brand-navy)]">Régimen según la fecha: {etiquetaRegimen(regimen)}.</strong>{" "}
+            {regimen.multa_art_80
+              ? "Las multas de las leyes 24.013, 25.323 (art. 1) y 25.345 estaban vigentes; consultá con un abogado para incluirlas."
+              : "Las multas por falta de registración y por certificados (leyes 24.013, 25.323 art. 1 y art. 80 LCT) fueron derogadas por la ley 27.742 y no se incluyen."}
+          </p>
+        )}
         <button type="submit" className="w-full rounded bg-[var(--brand-navy)] px-4 py-3 text-[14px] font-semibold text-white hover:bg-[var(--brand-navy-2)]">
           Calcular indemnización
         </button>
@@ -93,9 +103,15 @@ export function CalcIndemnizacionPublica() {
           </div>
         ) : (
           <div>
-            <h3 className="font-[var(--font-display)] text-lg font-semibold text-[var(--brand-navy)] mb-4">
+            <h3 className="font-[var(--font-display)] text-lg font-semibold text-[var(--brand-navy)] mb-1">
               Liquidación estimada
             </h3>
+            <p className="mb-4 text-[11px] text-[var(--brand-mute)]">Régimen aplicado: {etiquetaRegimen(result.regimen)}</p>
+            {result.advertencias.length > 0 && (
+              <ul className="mb-3 space-y-1 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+                {result.advertencias.map((a) => <li key={a}>• {a}</li>)}
+              </ul>
+            )}
             <table className="w-full text-[13px]">
               <tbody className="divide-y divide-border">
                 {result.rubros.map((r) => (

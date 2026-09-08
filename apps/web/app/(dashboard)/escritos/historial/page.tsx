@@ -3,6 +3,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { FileText } from "lucide-react";
 import Link from "next/link";
 import { HistorialList, type EscritoRow } from "@/components/escritos/historial-list";
+import { PageShell } from "@/components/layout/page-shell";
 
 export default async function HistorialPage() {
   const supabase = await createClient();
@@ -13,6 +14,7 @@ export default async function HistorialPage() {
     .limit(200);
 
   return (
+    <PageShell crumbs={[{ label: "Escritos", href: "/escritos" }, { label: "Historial" }]}>
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-slate-900">Historial de escritos</h1>
@@ -37,5 +39,6 @@ export default async function HistorialPage() {
         <HistorialList escritos={escritos as EscritoRow[]} />
       )}
     </div>
+    </PageShell>
   );
 }

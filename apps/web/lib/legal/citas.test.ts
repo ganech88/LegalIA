@@ -59,11 +59,20 @@ describe("verificarCitas — fallos", () => {
     expect(fallo!.estado).toBe("verificada");
   });
 
-  it("marca como dudoso un fallo del corpus no confirmado", () => {
-    const r = verificarCitas("Como se resolvió en Cantilo sobre teletrabajo.");
-    const fallo = r.citas.find((c) => c.tipo === "fallo" && c.cita.includes("Cantilo"));
-    expect(fallo).toBeDefined();
-    expect(fallo!.estado).toBe("dudosa");
+  it("marca como DEROGADA una norma derogada por la ley 27.742 (art. 1 ley 25.323)", () => {
+    const r = verificarCitas("Se reclama la duplicación del art. 1 de la ley 25.323 y la multa del art. 45 de la ley 25.345.");
+    const a1 = r.citas.find((c) => c.tipo === "articulo" && c.cita.includes("art. 1 "));
+    expect(a1).toBeDefined();
+    expect(a1!.estado).toBe("derogada");
+    const a45 = r.citas.find((c) => c.tipo === "articulo" && c.cita.includes("art. 45"));
+    expect(a45!.estado).toBe("derogada");
+    expect(r.resumen.derogadas).toBe(2);
+  });
+
+  it("el art. 2 de la ley 25.323 sigue verificado (no fue derogado)", () => {
+    const r = verificarCitas("Se reclama el incremento del art. 2 de la ley 25.323.");
+    const a2 = r.citas.find((c) => c.tipo === "articulo" && c.cita.includes("art. 2 "));
+    expect(a2!.estado).toBe("verificada");
   });
 
   it("marca como no verificable una carátula desconocida", () => {

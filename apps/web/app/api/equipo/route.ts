@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { sendEmail, isEmailConfigured } from "@/lib/email/resend";
+import { sendEmail, isEmailConfigured, escapeHtml } from "@/lib/email/resend";
 
 function adminClient() {
   return createAdminClient(
@@ -16,14 +16,16 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
-  const body = await request.json();
-  const action = body.action as string;
+  const body = await request.json().catch(() => ({}));
+  const action = typeof body.action === "string" ? body.action : "";
   const email = (user.email ?? "").toLowerCase();
+  const tieneServiceRole = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   // ── Crear estudio ─────────────────────────────────────────────
   if (action === "create") {
-    const name = (body.name as string)?.trim();
+    const name = typeof body.name === "string" ? body.name.trim().slice(0, 80) : "";
     if (!name) return NextResponse.json({ error: "Indicá un nombre para el estudio." }, { status: 400 });
+    if (!tieneServiceRole) return NextResponse.json({ error: "Servicio no disponible." }, { status: 503 });
 
     const { data: prof } = await supabase.from("profiles").select("plan").eq("id", user.id).single();
     if (prof?.plan !== "estudio") {
@@ -32,11 +34,14 @@ export async function POST(request: Request) {
     const { data: yaTiene } = await supabase.from("organizations").select("id").eq("owner_id", user.id).maybeSingle();
     if (yaTiene) return NextResponse.json({ error: "Ya tenés un estudio creado." }, { status: 409 });
 
-    const { data: org, error } = await supabase
-      .from("organizations").insert({ name, owner_id: user.id }).select("id").single();
+    // La creación pasa por service role: `authenticated` ya no puede insertar
+    // organizaciones por PostgREST (migración 0025).
+    const admin = adminClient();
+    const { data: org, error } = await admin
+      .from("organizations").insert({ name, owner_id: user.id, plan: "estudio", max_miembros: 5 }).select("id").single();
     if (error) return NextResponse.json({ error: "No se pudo crear el estudio." }, { status: 500 });
 
-    await supabase.from("organization_members").insert({
+    await admin.from("organization_members").insert({
       organization_id: org.id, user_id: user.id, invited_email: email, role: "owner", status: "active",
     });
     return NextResponse.json({ id: org.id });
@@ -44,9 +49,21 @@ export async function POST(request: Request) {
 
   // ── Invitar miembro ───────────────────────────────────────────
   if (action === "invite") {
-    const invitado = (body.email as string)?.trim().toLowerCase();
-    if (!invitado || !invitado.includes("@")) {
+    const invitado = typeof body.email === "string" ? body.email.trim().toLowerCase().slice(0, 254) : "";
+    if (!invitado || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invitado)) {
       return NextResponse.json({ error: "Ingresá un email válido." }, { status: 400 });
+    }
+    // Verificamos el plan del dueño en cada invitación (no solo al crear el estudio).
+    const { data: profInv } = await supabase.from("profiles").select("plan").eq("id", user.id).single();
+    if (profInv?.plan !== "estudio") {
+      return NextResponse.json({ error: "Necesitás el plan Estudio activo para invitar integrantes." }, { status: 403 });
+    }
+    // Máximo 10 invitaciones por hora por dueño (anti-spam con marca LegalIA).
+    const { data: rlOk } = await supabase.rpc("check_rate_limit", {
+      p_user_id: user.id, p_action: "invitar", p_max: 10, p_window_seconds: 3600,
+    });
+    if (rlOk === false) {
+      return NextResponse.json({ error: "Demasiadas invitaciones seguidas. Probá en un rato." }, { status: 429 });
     }
     const { data: org } = await supabase
       .from("organizations").select("id, name, max_miembros").eq("owner_id", user.id).maybeSingle();
@@ -70,8 +87,8 @@ export async function POST(request: Request) {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "";
       await sendEmail({
         to: invitado,
-        subject: `Te invitaron al estudio "${org.name}" en LegalIA`,
-        html: `<p>Te invitaron a unirte al estudio <strong>${org.name}</strong> en LegalIA.</p>
+        subject: `Te invitaron al estudio "${org.name.slice(0, 80)}" en LegalIA`,
+        html: `<p>Te invitaron a unirte al estudio <strong>${escapeHtml(org.name)}</strong> en LegalIA.</p>
                <p>Ingresá o registrate con este email y aceptá la invitación desde <a href="${appUrl}/equipo">Equipo</a>.</p>`,
       });
     }
@@ -89,14 +106,15 @@ export async function POST(request: Request) {
       await supabase.from("organization_members")
         .update({ user_id: user.id, status: "active" }).eq("id", inv.id);
     }
-    // El miembro obtiene los límites del plan Estudio mientras pertenezca al equipo.
-    await supabase.from("profiles").update({ plan: "estudio" }).eq("id", user.id);
+    // Los límites del plan Estudio se heredan por membresía activa
+    // (plan_efectivo() en la base, migración 0025): no tocamos profiles.plan,
+    // así una suscripción propia del miembro nunca se pisa.
     return NextResponse.json({ ok: true, aceptadas: invitaciones.length });
   }
 
   // ── Quitar miembro (solo dueño) ───────────────────────────────
   if (action === "remove") {
-    const memberId = body.memberId as string;
+    const memberId = typeof body.memberId === "string" ? body.memberId : "";
     if (!memberId) return NextResponse.json({ error: "Falta el miembro." }, { status: 400 });
 
     const { data: org } = await supabase.from("organizations").select("id").eq("owner_id", user.id).maybeSingle();
@@ -112,11 +130,8 @@ export async function POST(request: Request) {
     }
 
     await supabase.from("organization_members").delete().eq("id", memberId);
-
-    // Revertir el plan del miembro (requiere service role).
-    if (miembro.user_id && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      await adminClient().from("profiles").update({ plan: "free" }).eq("id", miembro.user_id);
-    }
+    // Al dejar el estudio, el miembro vuelve automáticamente a su propio plan
+    // (plan_efectivo() deja de verlo como integrante). Nada que revertir.
     return NextResponse.json({ ok: true });
   }
 

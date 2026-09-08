@@ -3,6 +3,16 @@
  * Requiere RESEND_API_KEY y EMAIL_FROM (ej: "LegalIA <avisos@tudominio.com.ar>").
  */
 
+/** Escapa texto provisto por usuarios antes de interpolarlo en HTML de email. */
+export function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function isEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
 }

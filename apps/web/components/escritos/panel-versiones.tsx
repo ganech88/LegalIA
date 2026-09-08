@@ -49,7 +49,7 @@ export function PanelVersiones({
   }
 
   return (
-    <div className="flex h-full w-[300px] shrink-0 flex-col border-l border-border bg-white">
+    <div className="absolute inset-y-0 right-0 z-10 flex h-full w-full flex-col border-l border-border bg-white shadow-xl md:static md:w-[300px] md:shrink-0 md:shadow-none">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <History className="h-4 w-4 text-[var(--brand-navy)]" />

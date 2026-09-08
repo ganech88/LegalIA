@@ -3,71 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/legal/calculadoras";
-
-interface ARTResult {
-  tipo: string;
-  porcentaje_incapacidad: number;
-  ingreso_base: number;
-  indemnizacion: number;
-  piso_minimo: number;
-  aplica_piso: boolean;
-  adicional_gran_invalidez?: number;
-  total: number;
-}
-
-function calcularART(params: {
-  ingreso_base_mensual: number;
-  porcentaje_incapacidad: number;
-  edad: number;
-  tipo: "ilp" | "ilt" | "gran_invalidez" | "muerte";
-  dias_ilt?: number;
-}): ARTResult {
-  const { ingreso_base_mensual, porcentaje_incapacidad, edad, tipo, dias_ilt } = params;
-  const ibm = ingreso_base_mensual;
-  const coef_edad = 65 / edad;
-
-  let indemnizacion = 0;
-  let piso_minimo = 0;
-  const aplica_piso = false;
-  let adicional_gran_invalidez: number | undefined;
-
-  switch (tipo) {
-    case "ilt":
-      indemnizacion = (ibm / 30) * (dias_ilt ?? 0);
-      break;
-    case "ilp":
-      if (porcentaje_incapacidad <= 50) {
-        indemnizacion = 53 * ibm * (porcentaje_incapacidad / 100) * coef_edad;
-      } else {
-        indemnizacion = 53 * ibm * (porcentaje_incapacidad / 100) * coef_edad;
-      }
-      piso_minimo = ibm * 3 * (porcentaje_incapacidad / 100);
-      break;
-    case "gran_invalidez":
-      indemnizacion = 53 * ibm * coef_edad;
-      adicional_gran_invalidez = ibm * 3;
-      piso_minimo = ibm * 5;
-      break;
-    case "muerte":
-      indemnizacion = 53 * ibm * coef_edad;
-      piso_minimo = ibm * 5;
-      break;
-  }
-
-  const base = Math.max(indemnizacion, piso_minimo);
-  const total = base + (adicional_gran_invalidez ?? 0);
-
-  return {
-    tipo,
-    porcentaje_incapacidad,
-    ingreso_base: ibm,
-    indemnizacion,
-    piso_minimo,
-    aplica_piso: piso_minimo > indemnizacion,
-    adicional_gran_invalidez,
-    total,
-  };
-}
+import { calcularART, pisosVigentes, type ARTResult, type TipoPrestacion } from "@/lib/legal/art";
 
 const TIPOS = [
   { value: "ilp", label: "Incapacidad Laboral Permanente (ILP)" },
@@ -80,9 +16,12 @@ export default function ArtLey24557Page() {
   const [ingresoBase, setIngresoBase] = useState("");
   const [porcentaje, setPorcentaje] = useState("");
   const [edad, setEdad] = useState("");
-  const [tipo, setTipo] = useState<"ilp" | "ilt" | "gran_invalidez" | "muerte">("ilp");
+  const [tipo, setTipo] = useState<TipoPrestacion>("ilp");
   const [diasIlt, setDiasIlt] = useState("");
+  const [fechaPmi, setFechaPmi] = useState("");
+  const [noInItinere, setNoInItinere] = useState(true);
   const [result, setResult] = useState<ARTResult | null>(null);
+  const pisos = pisosVigentes(fechaPmi || undefined);
 
   function handleCalcular(e: React.FormEvent) {
     e.preventDefault();
@@ -92,6 +31,8 @@ export default function ArtLey24557Page() {
       edad: parseInt(edad),
       tipo,
       dias_ilt: diasIlt ? parseInt(diasIlt) : undefined,
+      aplica_20_por_ciento: noInItinere,
+      fecha_pmi: fechaPmi || undefined,
     });
     setResult(r);
   }
@@ -113,7 +54,8 @@ export default function ArtLey24557Page() {
             Accidente laboral — Ley 24.557
           </h1>
           <p className="mt-2 text-[14px] text-[var(--brand-ink-2)] max-w-[600px]">
-            Calculo de prestaciones dinerarias por incapacidad laboral (ILP, ILT, gran invalidez, muerte) segun Ley de Riesgos del Trabajo.
+            Prestaciones dinerarias de la LRT (leyes 24.557, 26.773 y 27.348) con los pisos y compensaciones
+            de la SRT vigentes a la fecha del siniestro: {pisos.fuente}.
           </p>
         </header>
 
@@ -152,8 +94,8 @@ export default function ArtLey24557Page() {
                 value={edad}
                 onChange={(e) => setEdad(e.target.value)}
                 required
-                min={18}
-                max={65}
+                min={14}
+                max={99}
                 placeholder="35"
                 className="w-full rounded border border-border bg-white px-3 py-2.5 text-[13px] focus:border-[var(--brand-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold-pale)]"
               />
@@ -173,6 +115,25 @@ export default function ArtLey24557Page() {
                   className="w-full rounded border border-border bg-white px-3 py-2.5 text-[13px] focus:border-[var(--brand-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold-pale)]"
                 />
               </div>
+            )}
+
+            {tipo !== "ilt" && (
+              <>
+                <div className="space-y-1.5">
+                  <label className="t-overline text-[var(--brand-navy)] block">Fecha de la primera manifestación invalidante</label>
+                  <input
+                    type="date"
+                    value={fechaPmi}
+                    onChange={(e) => setFechaPmi(e.target.value)}
+                    className="w-full rounded border border-border bg-white px-3 py-2.5 text-[13px] focus:border-[var(--brand-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold-pale)]"
+                  />
+                  <p className="text-[11px] text-[var(--brand-mute)]">Define qué resolución de la SRT aplica: {pisos.fuente} ({pisos.vigencia_desde.split("-").reverse().join("/")} – {pisos.vigencia_hasta.split("-").reverse().join("/")}).</p>
+                </div>
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input type="checkbox" checked={noInItinere} onChange={(e) => setNoInItinere(e.target.checked)} className="h-4 w-4 rounded border-border" />
+                  <span className="text-[13px] text-[var(--brand-ink-2)]">El daño NO fue in itinere (+20 %, art. 3 ley 26.773)</span>
+                </label>
+              </>
             )}
 
             {tipo === "ilt" && (
@@ -213,38 +174,31 @@ export default function ArtLey24557Page() {
 
                 {result.aplica_piso && (
                   <div className="mb-4 rounded border border-[var(--brand-gold)]/30 bg-[var(--brand-gold)]/5 px-4 py-2.5 text-[12px] text-[var(--brand-ink-2)]">
-                    <strong>Piso minimo aplicado.</strong> La formula arroja un valor menor al piso establecido por la ley.
+                    <strong>Piso mínimo aplicado.</strong> La fórmula ({formatCurrency(result.formula)}) arroja un valor menor al piso de {result.pisos.fuente} ({formatCurrency(result.piso)}).
                   </div>
                 )}
 
                 <table className="w-full text-[13px]">
                   <tbody className="divide-y divide-border">
                     <tr>
-                      <td className="py-2.5 text-[var(--brand-ink)]">Ingreso Base Mensual</td>
+                      <td className="py-2.5 text-[var(--brand-ink)]">Ingreso base mensual (art. 12 LRT)</td>
                       <td className="py-2.5 text-right font-mono text-[var(--brand-navy)] font-medium">{formatCurrency(result.ingreso_base)}</td>
                     </tr>
                     {result.tipo !== "ilt" && (
                       <tr>
-                        <td className="py-2.5 text-[var(--brand-ink)]">Incapacidad</td>
-                        <td className="py-2.5 text-right font-mono text-[var(--brand-navy)] font-medium">{result.porcentaje_incapacidad}%</td>
+                        <td className="py-2.5 text-[var(--brand-ink)]">Incapacidad · coeficiente de edad</td>
+                        <td className="py-2.5 text-right font-mono text-[var(--brand-navy)] font-medium">{result.porcentaje_incapacidad || (result.tipo === "muerte" ? "—" : "100")}% · {result.coef_edad.toFixed(3)}</td>
                       </tr>
                     )}
-                    <tr>
-                      <td className="py-2.5 text-[var(--brand-ink)]">Indemnizacion (formula)</td>
-                      <td className="py-2.5 text-right font-mono text-[var(--brand-navy)] font-medium">{formatCurrency(result.indemnizacion)}</td>
-                    </tr>
-                    {result.tipo !== "ilt" && (
-                      <tr>
-                        <td className="py-2.5 text-[var(--brand-ink)]">Piso minimo legal</td>
-                        <td className="py-2.5 text-right font-mono text-[var(--brand-navy)] font-medium">{formatCurrency(result.piso_minimo)}</td>
+                    {result.rubros.map((r) => (
+                      <tr key={r.label + r.norma}>
+                        <td className="py-2.5">
+                          <span className="text-[var(--brand-ink)]">{r.label}</span>
+                          <span className="block text-[11px] text-[var(--brand-mute)]">{r.norma} — {r.detalle}</span>
+                        </td>
+                        <td className="py-2.5 text-right font-mono text-[var(--brand-navy)] font-medium align-top">{formatCurrency(r.monto)}</td>
                       </tr>
-                    )}
-                    {result.adicional_gran_invalidez && (
-                      <tr>
-                        <td className="py-2.5 text-[var(--brand-ink)]">Adicional gran invalidez</td>
-                        <td className="py-2.5 text-right font-mono text-[var(--brand-gold)] font-medium">{formatCurrency(result.adicional_gran_invalidez)}</td>
-                      </tr>
-                    )}
+                    ))}
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 border-[var(--brand-navy)]">
@@ -256,8 +210,9 @@ export default function ArtLey24557Page() {
                   </tfoot>
                 </table>
 
-                <div className="mt-6 p-4 rounded bg-[var(--brand-paper-2)] text-[11px] text-[var(--brand-mute)] leading-relaxed">
-                  <strong>Formula aplicada:</strong> 53 × IBM × (% incapacidad) × (65/edad). Pisos y adicionales segun Dec. 1694/09 y actualizaciones MTESS.
+                <div className="mt-6 space-y-1.5 p-4 rounded bg-[var(--brand-paper-2)] text-[11px] text-[var(--brand-mute)] leading-relaxed">
+                  <p><strong>Fórmula:</strong> 53 × IBM × (% incapacidad) × (65/edad) para incapacidades parciales (art. 14.2); 53 × IBM × (65/edad) sin porcentaje para incapacidad total ≥ 66 %, gran invalidez y muerte (arts. 15.2, 17 y 18). Pisos y compensaciones adicionales de pago único: {result.pisos.fuente}.</p>
+                  {result.advertencias.map((a) => <p key={a}>• {a}</p>)}
                 </div>
               </div>
             )}

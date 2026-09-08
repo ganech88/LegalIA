@@ -6,9 +6,9 @@ import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const FEATURES = [
-  { num: "I", title: "Generador de escritos", desc: "Demandas laborales, cartas documento, contestaciones y recursos. Formato procesal argentino correcto por jurisdiccion — CABA, PBA y nacional." },
-  { num: "II", title: "Asistente legal IA", desc: "Consulta sobre la LCT, CCCN, CPCCN y mas. Cada respuesta cita los articulos para que los verifiques antes de usarlos." },
-  { num: "III", title: "Calculadoras legales", desc: "Indemnizacion art. 245, ART, intereses BNA/CNAT, actualizacion por IPC y RIPTE. Indices actualizados." },
+  { num: "I", title: "Escritos con citas verificadas", desc: "Demandas, contestaciones, cartas documento, amparos y recursos con formato procesal por jurisdicción. Cada artículo citado se contrasta contra el texto completo de la ley y las normas derogadas por las leyes 27.742 y 27.802 se marcan en rojo." },
+  { num: "II", title: "Calculadoras a la reforma 2026", desc: "Indemnización art. 245 con el régimen que corresponde a la fecha del despido (Ley Bases / ley 27.802), ART con pisos SRT vigentes, actualización IPC + 3 % (art. 276 LCT), plazos con feria y feriados, honorarios con UMA al día." },
+  { num: "III", title: "El trabajo que te llega", desc: "Sacale una foto a la cédula y LegalIA agenda el plazo. Subí la demanda que te notificaron y tenés el análisis con defensas y el borrador de contestación. Sin pedirte claves del PJN." },
 ];
 
 const PLANS = [
@@ -91,12 +91,14 @@ export default function HomePage() {
               <span>ED. PUBLICA</span>
             </div>
             <h1 className="font-[var(--font-display)] text-[clamp(2.5rem,7vw,5.5rem)] font-semibold leading-[0.98] tracking-[-0.035em] text-[var(--brand-navy)] max-w-[1000px]">
-              La herramienta<br />
-              <em className="italic text-[var(--brand-gold)]">editorial</em> del abogado<br />
-              argentino moderno.
+              Escritos que podés<br />
+              <em className="italic text-[var(--brand-gold)]">firmar</em> sin miedo.<br />
+              Números que podés defender.
             </h1>
-            <p className="mt-8 max-w-[640px] text-[18px] leading-[1.6] text-[var(--brand-ink-2)]">
-              Genera escritos con formato procesal, consulta legislacion argentina con citas que podes verificar, calcula indemnizaciones y gestiona tus expedientes. IA especializada en derecho argentino.
+            <p className="mt-8 max-w-[680px] text-[18px] leading-[1.6] text-[var(--brand-ink-2)]">
+              Generador de escritos para abogados argentinos con semáforo de citas contra la ley completa,
+              calculadoras laborales actualizadas a la ley 27.802 y a la Ley Bases, agenda de plazos con feria judicial
+              y portal para tus clientes. En pesos, sin claves del PJN.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Link href="/register" className="rounded bg-[var(--brand-navy)] px-6 py-3.5 text-[15px] font-semibold text-white hover:bg-[var(--brand-navy-2)]">
@@ -127,6 +129,35 @@ export default function HomePage() {
                   <div className="font-[var(--font-display)] text-3xl font-semibold italic text-[var(--brand-gold)] mb-3">{f.num}</div>
                   <h3 className="font-[var(--font-display)] text-[17px] font-semibold text-[var(--brand-navy)] leading-tight mb-2">{f.title}</h3>
                   <p className="text-[13px] text-[var(--brand-ink-2)] leading-relaxed">{f.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Por qué LegalIA ───────────────────────── */}
+        <section id="por-que" className="border-y border-border bg-white py-20">
+          <div className="mx-auto max-w-[1200px] px-6 lg:px-10">
+            <header className="mb-12 text-center">
+              <div className="t-overline text-[var(--brand-gold)] mb-2">◆ POR QUÉ LEGALIA</div>
+              <h2 className="font-[var(--font-display)] text-5xl font-semibold text-[var(--brand-navy)] tracking-[-0.03em]">
+                Lo que no hace ChatGPT (ni la mayoría)
+              </h2>
+              <p className="mx-auto mt-4 max-w-[640px] text-[15px] text-[var(--brand-ink-2)]">
+                En 2025 y 2026 tribunales de Rosario, Azul y General Roca sancionaron escritos con fallos inventados por IA.
+                LegalIA está construida para que eso no te pase.
+              </p>
+            </header>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {[
+                { t: "Semáforo de citas", d: "Cada artículo se verifica contra la LCT, el CCCN y la ley 18.345 completos. Las normas derogadas (multas ley 24.013, art. 80, art. 1 ley 25.323) se marcan como derogadas, no como válidas." },
+                { t: "Régimen automático por fecha", d: "La calculadora elige sola si aplica el régimen anterior, la Ley Bases o la ley 27.802 según la fecha del despido. Nada de liquidar multas que ya no existen." },
+                { t: "Anexo auditable", d: "Cada rubro con su norma, su fórmula y su fuente (índices oficiales de datos.gob.ar con fecha del dato). El escrito transcribe la liquidación; la IA no la inventa." },
+                { t: "Sin claves judiciales, en pesos", d: "No te pedimos usuario ni contraseña del PJN ni de la MEV. Planes en pesos con free permanente y calculadoras ilimitadas." },
+              ].map((x) => (
+                <div key={x.t} className="rounded border border-border bg-[var(--brand-paper)] p-6">
+                  <h3 className="font-[var(--font-display)] text-[17px] font-semibold text-[var(--brand-navy)]">{x.t}</h3>
+                  <p className="mt-2 text-[13px] leading-relaxed text-[var(--brand-ink-2)]">{x.d}</p>
                 </div>
               ))}
             </div>

@@ -1,20 +1,28 @@
-const CACHE_NAME = "legalia-v1";
+// Cambiar la versión invalida el caché de todos los clientes en el próximo deploy.
+const CACHE_NAME = "legalia-v3";
 const OFFLINE_URL = "/offline";
 
 const PRECACHE_URLS = [
-  "/",
-  "/dashboard",
-  "/login",
   "/offline",
   "/manifest.json",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
 ];
 
+// Solo estas páginas (públicas) se guardan en caché. Las del workspace
+// (expedientes, escritos, portal del cliente) NUNCA se persisten en disco.
+const PAGINAS_CACHEABLES = [/^\/$/, /^\/login$/, /^\/offline$/, /^\/herramientas(\/|$)/, /^\/terminos$/, /^\/privacidad$/];
+
 // Install: precache core shell
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        PRECACHE_URLS.map((u) =>
+          fetch(u).then((r) => { if (r.ok) return cache.put(u, r); }).catch(() => undefined)
+        )
+      )
+    )
   );
   self.skipWaiting();
 });
@@ -53,8 +61,10 @@ self.addEventListener("fetch", (event) => {
         (cached) =>
           cached ||
           fetch(request).then((response) => {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            if (response.ok) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            }
             return response;
           })
       )
@@ -62,14 +72,17 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Pages: network-first, fallback to cache, then offline page
+  // Pages: network-first; solo las públicas se guardan; el resto cae a /offline.
+  const cacheable = PAGINAS_CACHEABLES.some((re) => re.test(url.pathname));
   event.respondWith(
     fetch(request)
       .then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        if (cacheable && response.ok && response.type === "basic") {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        }
         return response;
       })
-      .catch(() => caches.match(request).then((cached) => cached || caches.match(OFFLINE_URL)))
+      .catch(() => (cacheable ? caches.match(request) : Promise.resolve(undefined)).then((cached) => cached || caches.match(OFFLINE_URL)))
   );
 });

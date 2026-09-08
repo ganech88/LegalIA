@@ -7,6 +7,8 @@ import {
   calcularTasaJusticia,
   calcularCuotaAlimentaria,
   VALOR_UMA_DEFAULT,
+  umaVigente,
+  aplicarTopeCostasLaboral,
   RANGOS_CUOTA,
 } from "@/lib/legal/honorarios";
 import { formatCurrency } from "@/lib/legal/calculadoras";
@@ -21,6 +23,9 @@ export default function HonorariosPage() {
   const [porc, setPorc] = useState("16");
   const [etapas, setEtapas] = useState("3");
   const [uma, setUma] = useState(String(VALOR_UMA_DEFAULT));
+  const umaInfo = umaVigente();
+  const [esLaboral, setEsLaboral] = useState(false);
+  const topeLaboral = honorBaseTope(esLaboral, base, uma, porc, etapas);
   const honor = base ? calcularHonorarios({
     baseRegulatoria: parseFloat(base) || 0,
     porcentaje: parseFloat(porc) || 0,
@@ -79,7 +84,11 @@ export default function HonorariosPage() {
                     </select>
                   </div>
                 </div>
-                <Field label="Valor UMA (ARS)" value={uma} onChange={setUma} hint="Actualizar según última acordada CSJN" />
+                <Field label="Valor UMA (ARS)" value={uma} onChange={setUma} hint={`Última conocida: ${umaInfo.resolucion}, vigente desde ${umaInfo.desde.split("-").reverse().join("/")}`} />
+                <label className="flex items-center gap-2 text-[12px] text-[var(--brand-ink-2)] cursor-pointer">
+                  <input type="checkbox" checked={esLaboral} onChange={(e) => setEsLaboral(e.target.checked)} className="h-4 w-4 rounded border-border" />
+                  Juicio laboral: aplicar tope de costas del 25 % (art. 277 LCT, ley 27.802)
+                </label>
               </div>
               <ResultCard>
                 {honor ? (
@@ -88,7 +97,10 @@ export default function HonorariosPage() {
                     <Line k="Honorario pleno (3 etapas)" v={formatCurrency(honor.honorarioPleno)} />
                     <Line k="Por etapa" v={formatCurrency(honor.honorarioPorEtapa)} />
                     <Line k="Equivalente en UMA" v={`${honor.enUMA.toFixed(2)} UMA`} />
-                    <Disc>Estimación según base × porcentaje × etapas. La regulación efectiva la fija el juez (Ley 27.423). Verificá el valor de la UMA vigente.</Disc>
+                    {topeLaboral && (
+                      <Line k="Tope 25 % de costas (laboral)" v={`${formatCurrency(topeLaboral.tope)}${topeLaboral.excede ? " — EXCEDIDO: se prorratea" : " — no alcanzado"}`} />
+                    )}
+                    <Disc>Estimación según base × porcentaje × etapas. La regulación efectiva la fija el juez (ley 27.423: escala del art. 21 para el vencedor; mínimo de 20 UMA en procesos de conocimiento, art. 58; +40 % si además actúa como apoderado, art. 20). En PBA rige la ley 14.967 (JUS), no la 27.423. Verificá el valor de la UMA vigente.</Disc>
                   </>
                 ) : <Empty />}
               </ResultCard>
@@ -167,4 +179,15 @@ function Disc({ children }: { children: React.ReactNode }) {
 }
 function Empty() {
   return <div className="flex flex-col items-center justify-center h-full text-center py-12"><div className="font-[var(--font-display)] text-6xl italic text-[var(--brand-gold)] opacity-40 mb-4">§</div><p className="text-[13px] text-[var(--brand-mute)]">Completá los datos para ver el resultado.</p></div>;
+}
+
+function honorBaseTope(esLaboral: boolean, base: string, uma: string, porc: string, etapas: string) {
+  if (!esLaboral || !base) return null;
+  const h = calcularHonorarios({
+    baseRegulatoria: parseFloat(base) || 0,
+    porcentaje: parseFloat(porc) || 0,
+    etapasCumplidas: parseInt(etapas, 10) || 0,
+    valorUMA: parseFloat(uma) || VALOR_UMA_DEFAULT,
+  });
+  return aplicarTopeCostasLaboral({ montoSentencia: parseFloat(base) || 0, totalCostas: h.honorario });
 }

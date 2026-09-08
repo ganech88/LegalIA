@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Link2, Copy, Check, Globe } from "lucide-react";
+import { Link2, Copy, Check, Globe, MessageCircle } from "lucide-react";
+import { toast } from "sonner";
 
 /**
  * Habilita el Portal del Cliente para un caso y copia el link compartible.
@@ -23,7 +24,14 @@ export function PortalToggle({
   const [saving, setSaving] = useState(false);
   const supabase = createClient();
 
-  const url = token ? `${typeof window !== "undefined" ? window.location.origin : ""}/portal/${token}` : "";
+  // El origen se resuelve en el cliente después de hidratar (evita mismatch SSR).
+  const [origin, setOrigin] = useState("");
+  useEffect(() => { setOrigin(window.location.origin); }, []);
+  const url = token ? `${origin}/portal/${token}` : "";
+  // El abogado argentino vive en WhatsApp: compartir el portal es un solo toque.
+  const whatsapp = url
+    ? `https://wa.me/?text=${encodeURIComponent(`Hola, te comparto el acceso al estado de tu caso. Podés verlo cuando quieras en este link: ${url}`)}`
+    : "";
 
   async function toggle() {
     setSaving(true);
@@ -36,14 +44,20 @@ export function PortalToggle({
     if (!error) {
       setHabilitado(nuevoEstado);
       setToken(nuevoToken);
+    } else {
+      toast.error("No se pudo actualizar el portal del cliente.");
     }
     setSaving(false);
   }
 
   async function copiar() {
-    await navigator.clipboard.writeText(url);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      toast.error("No se pudo copiar el link.");
+    }
   }
 
   return (
@@ -82,6 +96,16 @@ export function PortalToggle({
             {copiado ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
             {copiado ? "Copiado" : "Copiar link"}
           </button>
+          <a
+            href={whatsapp}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Enviar el link por WhatsApp"
+            className="flex shrink-0 items-center gap-1 rounded bg-emerald-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-700"
+          >
+            <MessageCircle className="h-3 w-3" />
+            WhatsApp
+          </a>
         </div>
       )}
     </div>
