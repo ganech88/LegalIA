@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import { generateWithFallback, providerModelName } from "@/lib/ai/provider";
+import { streamEscrito } from "@/lib/api/stream-escrito";
 import { sanitizePromptValue, ANTI_INJECTION_GUARD } from "@/lib/ai/sanitize";
 import { checkIpRateLimit, getClientIp } from "@/lib/rate-limit";
 import { reservarCuota } from "@/lib/api/quota";
@@ -65,51 +65,32 @@ export async function POST(request: Request) {
     estilo +
     ANTI_INJECTION_GUARD;
 
-  try {
-    const { content, provider } = await generateWithFallback(
-      systemPrompt,
-      "Generá el escrito completo basándote en los datos proporcionados. Seguí la estructura adecuada para este tipo de escrito.",
-      { temperature: 0.3, maxTokens: 4096 },
-    );
+  const titulo = `${tipo_escrito} — ${new Date().toLocaleDateString("es-AR").replace(/\//g, "-")}`;
 
-    if (!content?.trim()) {
-      await cuota.refund();
-      return NextResponse.json(
-        { error: "No se pudo generar el escrito. No se descontó de tu cuota; intentá de nuevo." },
-        { status: 502 }
-      );
-    }
-
-    const titulo = `${tipo_escrito} — ${new Date().toLocaleDateString("es-AR").replace(/\//g, "-")}`;
-
-    const { data: escrito, error: insertError } = await supabase
-      .from("escritos")
-      .insert({
-        user_id: user.id,
-        template_id: null,
-        tipo: "personalizado",
-        titulo,
-        datos_caso: { tipo_escrito, fuero, jurisdiccion, descripcion, datos_caso },
-        contenido_generado: content,
-        jurisdiccion,
-        fuero,
-        modelo_usado: providerModelName(provider),
-      })
-      .select("id")
-      .single();
-
-    if (insertError) {
-      await cuota.refund();
-      return NextResponse.json(
-        { error: "Se generó el escrito pero no pudimos guardarlo. Copialo desde acá; no se descontó de tu cuota.", contenido: content },
-        { status: 500 },
-      );
-    }
-
-    return NextResponse.json({ id: escrito.id });
-  } catch (error: unknown) {
-    await cuota.refund();
-    const errMsg = error instanceof Error ? error.message : "Error desconocido";
-    return NextResponse.json({ error: `Error al generar el escrito: ${errMsg}` }, { status: 502 });
-  }
+  return streamEscrito({
+    systemPrompt,
+    userMessage: "Generá el escrito completo basándote en los datos proporcionados. Seguí la estructura adecuada para este tipo de escrito.",
+    temperature: 0.3,
+    maxTokens: 4096,
+    refund: cuota.refund,
+    onComplete: async (content, _provider, modelo) => {
+      const { data: escrito, error: insertError } = await supabase
+        .from("escritos")
+        .insert({
+          user_id: user.id,
+          template_id: null,
+          tipo: "personalizado",
+          titulo,
+          datos_caso: { tipo_escrito, fuero, jurisdiccion, descripcion, datos_caso },
+          contenido_generado: content,
+          jurisdiccion,
+          fuero,
+          modelo_usado: modelo,
+        })
+        .select("id")
+        .single();
+      if (insertError || !escrito) throw new Error("No pudimos guardar el escrito");
+      return escrito.id as string;
+    },
+  });
 }

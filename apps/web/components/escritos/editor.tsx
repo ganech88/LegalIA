@@ -433,7 +433,7 @@ p{margin:0 0 .2em} p.h{font-weight:bold;text-align:left;margin-top:.8em}</style>
           `}
           spellCheck
         />
-        {showCitas && <PanelCitas texto={content} onClose={() => setShowCitas(false)} />}
+        {showCitas && <PanelCitas texto={content} titulo={titulo} onClose={() => setShowCitas(false)} />}
         {showVersiones && (
           <PanelVersiones
             escritoId={escrito.id}

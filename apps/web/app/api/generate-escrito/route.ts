@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import { generateWithFallback, providerModelName } from "@/lib/ai/provider";
+import { streamEscrito } from "@/lib/api/stream-escrito";
 import { sanitizePromptValue, ANTI_INJECTION_GUARD } from "@/lib/ai/sanitize";
 import { checkIpRateLimit, getClientIp } from "@/lib/rate-limit";
 import { reservarCuota } from "@/lib/api/quota";
@@ -85,55 +85,37 @@ export async function POST(request: Request) {
     ? `\n\nEstilo de redacción del letrado (respetalo en la medida en que no contradiga el formato procesal): ${sanitizePromptValue(perfil.estilo_redaccion).slice(0, 1500)}`
     : "";
 
-  try {
-    const { content, provider } = await generateWithFallback(
-      prompt + "\n\n" + CONTEXTO_REFORMAS_2024_2026 + bloqueAnexo + estilo + ANTI_INJECTION_GUARD,
-      "Generá el escrito completo basándote en los datos proporcionados. Seguí la estructura indicada. Citá únicamente artículos de leyes argentinas de cuya existencia y contenido estés seguro; si no estás seguro de una cita, omitila o indicá que debe verificarse. No cites fallos con Sala, fecha o número de sentencia que no estén en el contexto provisto.",
-      { temperature: 0.3, maxTokens: 4096 },
-    );
+  const systemPrompt = prompt + "\n\n" + CONTEXTO_REFORMAS_2024_2026 + bloqueAnexo + estilo + ANTI_INJECTION_GUARD;
+  const userMessage =
+    "Generá el escrito completo basándote en los datos proporcionados. Seguí la estructura indicada. Citá únicamente artículos de leyes argentinas de cuya existencia y contenido estés seguro; si no estás seguro de una cita, omitila o indicá que debe verificarse. No cites fallos con Sala, fecha o número de sentencia que no estén en el contexto provisto.";
 
-    // Si no se generó contenido, devolvemos el crédito de uso al usuario.
-    if (!content?.trim()) {
-      await cuota.refund();
-      return NextResponse.json(
-        { error: "No se pudo generar el escrito. No se descontó de tu cuota; intentá de nuevo." },
-        { status: 502 }
-      );
-    }
+  const titulo = tituloDesdeDatos(template.nombre_display as string, datosSanitizados);
 
-    const titulo = tituloDesdeDatos(template.nombre_display as string, datosSanitizados);
-
-    const { data: escrito, error: insertError } = await supabase
-      .from("escritos")
-      .insert({
-        user_id: user.id,
-        template_id,
-        tipo: template.tipo,
-        titulo,
-        datos_caso,
-        contenido_generado: content,
-        jurisdiccion: datosSanitizados.jurisdiccion || template.jurisdiccion?.[0] || "nacional",
-        fuero: template.fuero,
-        modelo_usado: providerModelName(provider),
-        ...(caso_id ? { caso_id } : {}),
-      })
-      .select("id")
-      .single();
-
-    if (insertError) {
-      // El escrito existe pero no se pudo guardar: devolvemos crédito y contenido.
-      await cuota.refund();
-      return NextResponse.json(
-        { error: "Se generó el escrito pero no pudimos guardarlo. Copialo desde acá; no se descontó de tu cuota.", contenido: content },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ id: escrito.id });
-  } catch (error: unknown) {
-    // La generación falló: devolvemos el crédito de uso.
-    await cuota.refund();
-    const errMsg = error instanceof Error ? error.message : "Error desconocido";
-    return NextResponse.json({ error: `Error al generar el escrito: ${errMsg}` }, { status: 502 });
-  }
+  return streamEscrito({
+    systemPrompt,
+    userMessage,
+    temperature: 0.3,
+    maxTokens: 4096,
+    refund: cuota.refund,
+    onComplete: async (content, _provider, modelo) => {
+      const { data: escrito, error: insertError } = await supabase
+        .from("escritos")
+        .insert({
+          user_id: user.id,
+          template_id,
+          tipo: template.tipo,
+          titulo,
+          datos_caso,
+          contenido_generado: content,
+          jurisdiccion: datosSanitizados.jurisdiccion || template.jurisdiccion?.[0] || "nacional",
+          fuero: template.fuero,
+          modelo_usado: modelo,
+          ...(caso_id ? { caso_id } : {}),
+        })
+        .select("id")
+        .single();
+      if (insertError || !escrito) throw new Error("No pudimos guardar el escrito");
+      return escrito.id as string;
+    },
+  });
 }

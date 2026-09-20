@@ -13,14 +13,20 @@ const HERRAMIENTAS = [
   {
     href: "/herramientas/indemnizacion-despido",
     titulo: "Indemnización por despido (art. 245 LCT)",
-    desc: "Liquidación completa rubro por rubro: antigüedad, preaviso, integración, SAC, vacaciones, Ley 25.323 y art. 80.",
+    desc: "Liquidación completa con el régimen que corresponde a la fecha del despido (Ley Bases / ley 27.802): antigüedad, preaviso, integración, SAC y vacaciones.",
     publica: true,
   },
   {
-    href: "/register",
-    titulo: "Plazos procesales y prescripción",
-    desc: "Días hábiles judiciales, ferias, vencimientos y prescripción. Guardá los plazos en tu agenda con alertas por email.",
-    publica: false,
+    href: "/herramientas/actualizacion-ley-27802",
+    titulo: "Actualización de créditos laborales — ley 27.802",
+    desc: "IPC + 3 % anual (art. 276 LCT) con la serie oficial del INDEC en vivo, y la banda del art. 55 para juicios en trámite.",
+    publica: true,
+  },
+  {
+    href: "/herramientas/plazos-procesales",
+    titulo: "Plazos procesales 2026",
+    desc: "Días hábiles judiciales con feria de invierno, feriados trasladables y plazo de gracia por jurisdicción.",
+    publica: true,
   },
   {
     href: "/register",

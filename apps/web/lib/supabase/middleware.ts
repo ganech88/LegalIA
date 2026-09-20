@@ -48,6 +48,7 @@ export async function updateSession(request: NextRequest) {
     path === "/manifest.json" ||
     path === "/sw.js" ||
     path.startsWith("/herramientas") || // calculadoras públicas (SEO / adquisición)
+    path === "/api/indices" || // índices oficiales (datos públicos; rate limit por IP)
     path.startsWith("/portal/") || // portal del cliente (token no adivinable)
 
     path.startsWith("/api/webhooks") ||

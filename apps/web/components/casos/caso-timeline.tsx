@@ -76,6 +76,7 @@ export function CasoTimeline({ casoId }: { casoId: string }) {
           Expediente — actividad
         </h4>
         <div className="flex gap-3 text-[11px] font-semibold">
+          <Link href={`/casos/${casoId}`} className="text-slate-700 underline-offset-2 hover:underline">Expediente</Link>
           <Link href={`/escritos?caso=${casoId}`} className="text-slate-700 underline-offset-2 hover:underline">+ Escrito</Link>
           <Link href={`/agenda?caso=${casoId}`} className="text-slate-700 underline-offset-2 hover:underline">+ Plazo</Link>
         </div>

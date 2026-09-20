@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { leerStreamEscrito } from "@/lib/api/leer-stream-escrito";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,7 @@ export function DynamicForm({ template, initialValues, casoId }: DynamicFormProp
   const [prefilled, setPrefilled] = useState(false);
   const [segundos, setSegundos] = useState(0);
   const [contenidoSinGuardar, setContenidoSinGuardar] = useState<string | null>(null);
+  const [previa, setPrevia] = useState("");
   const abortRef = useRef<AbortController | null>(null);
   const router = useRouter();
   const draftKey = `legalia:draft:${template.id}`;
@@ -108,16 +110,25 @@ export function DynamicForm({ template, initialValues, casoId }: DynamicFormProp
         signal: controller.signal,
       });
 
-      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
         setError(data.error || "Error al generar el escrito. Intentá de nuevo.");
-        if (typeof data.contenido === "string") setContenidoSinGuardar(data.contenido);
+        setLoading(false);
+        return;
+      }
+
+      // Streaming: el escrito aparece mientras se redacta.
+      setPrevia("");
+      const r = await leerStreamEscrito(res, setPrevia);
+      if (r.error || !r.id) {
+        setError(r.error || "No se pudo guardar el escrito.");
+        if (r.texto.trim()) setContenidoSinGuardar(r.texto);
         setLoading(false);
         return;
       }
 
       try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
-      router.push(`/escritos/${data.id}`);
+      router.push(`/escritos/${r.id}`);
     } catch (err) {
       const abortado = err instanceof DOMException && err.name === "AbortError";
       setError(
@@ -239,12 +250,20 @@ export function DynamicForm({ template, initialValues, casoId }: DynamicFormProp
       )}
 
       <Button type="submit" className="w-full" disabled={loading} size="lg">
-        {loading ? `Generando escrito… ${segundos}s` : "Generar escrito"}
+        {loading ? `Redactando… ${segundos}s` : "Generar escrito"}
       </Button>
       {loading ? (
-        <div className="flex items-center justify-between text-[12px] text-muted-foreground">
-          <span>Redactando con el modelo principal: suele tardar entre 45 y 90 segundos. Podés esperar en esta pestaña.</span>
-          <button type="button" className="underline" onClick={() => abortRef.current?.abort()}>Cancelar</button>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-[12px] text-muted-foreground">
+            <span>{previa ? "El escrito se está redactando en vivo. Al terminar se guarda y se abre el editor." : "Preparando el contexto legal y el modelo…"}</span>
+            <button type="button" className="underline" onClick={() => abortRef.current?.abort()}>Cancelar</button>
+          </div>
+          {previa && (
+            <pre className="max-h-[360px] overflow-y-auto whitespace-pre-wrap rounded border border-border bg-[var(--brand-paper)] p-4 font-[var(--font-serif)] text-[13px] leading-relaxed text-[var(--brand-ink)]">
+              {previa}
+              <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-[var(--brand-gold)] align-middle" />
+            </pre>
+          )}
         </div>
       ) : (
         <p className="text-[12px] text-muted-foreground">

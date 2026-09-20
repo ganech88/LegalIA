@@ -18,11 +18,14 @@ import { FUEROS, JURISDICCIONES } from "@/types";
 import { ArrowLeft, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { PageShell } from "@/components/layout/page-shell";
+import { leerStreamEscrito } from "@/lib/api/leer-stream-escrito";
 
 export default function EscritoPersonalizadoPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previa, setPrevia] = useState("");
+  const [sinGuardar, setSinGuardar] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,15 +48,23 @@ export default function EscritoPersonalizadoPage() {
         body: JSON.stringify(body),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
         setError(data.error ?? "Error al generar el escrito");
         setLoading(false);
         return;
       }
 
-      router.push(`/escritos/${data.id}`);
+      setPrevia("");
+      setSinGuardar(null);
+      const r = await leerStreamEscrito(res, setPrevia);
+      if (r.error || !r.id) {
+        setError(r.error ?? "No se pudo guardar el escrito.");
+        if (r.texto.trim()) setSinGuardar(r.texto);
+        setLoading(false);
+        return;
+      }
+      router.push(`/escritos/${r.id}`);
     } catch {
       setError("Error de conexión. Intentá de nuevo.");
       setLoading(false);
@@ -162,11 +173,25 @@ export default function EscritoPersonalizadoPage() {
               </div>
             )}
 
+            {sinGuardar && (
+              <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                <p>El texto generado no pudo guardarse. Copialo para no perderlo:</p>
+                <Textarea readOnly value={sinGuardar} rows={8} className="bg-white font-mono text-[12px]" />
+              </div>
+            )}
+
+            {loading && previa && (
+              <pre className="max-h-[360px] overflow-y-auto whitespace-pre-wrap rounded border border-border bg-[var(--brand-paper)] p-4 font-[var(--font-serif)] text-[13px] leading-relaxed text-[var(--brand-ink)]">
+                {previa}
+                <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-[var(--brand-gold)] align-middle" />
+              </pre>
+            )}
+
             <Button type="submit" disabled={loading} size="lg" className="w-full">
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Generando escrito...
+                  {previa ? "Redactando en vivo…" : "Preparando…"}
                 </>
               ) : (
                 <>

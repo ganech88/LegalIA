@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { toast } from "sonner";
 
 import { useState, useEffect } from "react";
@@ -260,7 +262,11 @@ function CasoCard({ caso, onClick }: { caso: Caso; onClick: () => void }) {
     >
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-base leading-snug">{caso.caratula}</CardTitle>
+          <CardTitle className="text-base leading-snug">
+            <Link href={`/casos/${caso.id}`} onClick={(e) => e.stopPropagation()} className="hover:underline" title="Abrir expediente">
+              {caso.caratula}
+            </Link>
+          </CardTitle>
           <Badge
             variant="secondary"
             className={estadoConfig?.color ?? ""}

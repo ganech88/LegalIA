@@ -16,7 +16,7 @@
  * políticas de cada proveedor antes de procesar datos reales de clientes.
  */
 
-type Provider = "groq" | "gemini" | "anthropic" | "demo";
+export type Provider = "groq" | "gemini" | "anthropic" | "demo";
 
 const ALL_PROVIDERS: Provider[] = ["groq", "gemini", "anthropic"];
 
@@ -147,9 +147,10 @@ export async function generateWithFallback(
 export async function streamWithFallback(
   systemPrompt: string,
   userMessage: string,
-  options?: { temperature?: number; maxTokens?: number },
+  options?: { temperature?: number; maxTokens?: number; kind?: "chat" | "escrito" },
 ): Promise<{ stream: ReadableStream<Uint8Array>; provider: Provider; collectResponse: () => string }> {
-  const providers = availableProviders("chat");
+  const kind = options?.kind ?? "chat";
+  const providers = availableProviders(kind);
   const temp = options?.temperature ?? 0.5;
   const maxTok = options?.maxTokens ?? 2048;
 
@@ -172,7 +173,7 @@ export async function streamWithFallback(
   for (let i = 0; i < providers.length; i++) {
     const provider = providers[i];
     try {
-      const result = await buildStream(provider, systemPrompt, userMessage, temp, maxTok);
+      const result = await buildStream(provider, systemPrompt, userMessage, temp, maxTok, kind);
       return { ...result, provider };
     } catch {
       if (i === providers.length - 1) {
@@ -190,6 +191,7 @@ async function buildStream(
   userMessage: string,
   temperature: number,
   maxTokens: number,
+  kind: "chat" | "escrito" = "chat",
 ): Promise<{ stream: ReadableStream<Uint8Array>; collectResponse: () => string }> {
   let fullResponse = "";
   const encoder = new TextEncoder();
@@ -267,8 +269,9 @@ async function buildStream(
   // Anthropic
   const { getAnthropicClient } = await import("@/lib/ai/anthropic");
   const anthropic = getAnthropicClient();
+  // Escritos: modelo grande (mismo que la generación no-streaming). Chat: Haiku.
   const anthropicStream = anthropic.messages.stream({
-    model: "claude-haiku-4-5-20251001",
+    model: kind === "escrito" ? "claude-sonnet-4-6" : "claude-haiku-4-5-20251001",
     max_tokens: maxTokens,
     temperature,
     system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],

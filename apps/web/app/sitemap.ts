@@ -7,6 +7,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${base}/herramientas`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: `${base}/herramientas/indemnizacion-despido`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${base}/herramientas/actualizacion-ley-27802`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${base}/herramientas/plazos-procesales`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: `${base}/terminos`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
     { url: `${base}/privacidad`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
   ];

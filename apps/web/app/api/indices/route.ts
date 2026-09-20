@@ -9,11 +9,13 @@ import { checkIpRateLimit, getClientIp } from "@/lib/rate-limit";
  * y la fuente + fecha de cada punto, para que la liquidación sea auditable.
  */
 export async function GET(request: Request) {
+  // Datos públicos (datos.gob.ar): se sirve sin sesión para la calculadora
+  // pública, con un límite por IP más estricto para anónimos.
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const maxPorMinuto = user ? 30 : 10;
 
-  if (!checkIpRateLimit(getClientIp(request), "indices", 30, 60)) {
+  if (!checkIpRateLimit(getClientIp(request), "indices", maxPorMinuto, 60)) {
     return NextResponse.json({ error: "Demasiadas consultas. Esperá un momento." }, { status: 429 });
   }
 

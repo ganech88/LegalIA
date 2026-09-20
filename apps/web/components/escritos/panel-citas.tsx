@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldCheck, AlertTriangle, HelpCircle, X, Ban } from "lucide-react";
+import { ShieldCheck, AlertTriangle, HelpCircle, X, Ban, FileDown } from "lucide-react";
+import { toast } from "sonner";
+import { generarInformeVerificacionHtml } from "@/lib/legal/informe-verificacion";
+import { createClient } from "@/lib/supabase/client";
 import { type CitaVerificada } from "@/lib/legal/citas";
 import { useCitasVerificadas } from "@/lib/legal/use-citas";
 
@@ -18,9 +21,27 @@ const ESTILOS: Record<CitaVerificada["estado"], { icon: typeof ShieldCheck; colo
   derogada: { icon: Ban, color: "text-red-800 bg-red-100 border-red-300", label: "Norma derogada" },
 };
 
-export function PanelCitas({ texto, onClose }: { texto: string; onClose: () => void }) {
+export function PanelCitas({ texto, titulo, onClose }: { texto: string; titulo?: string; onClose: () => void }) {
   const [filtro, setFiltro] = useState<"todas" | "atencion">("todas");
   const { citas, resumen } = useCitasVerificadas(texto);
+
+  /** Informe imprimible (PDF desde el diálogo del navegador) con el semáforo completo. */
+  async function exportarInforme() {
+    let letrado: { nombre?: string | null; matricula?: string | null; colegio?: string | null } | undefined;
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from("profiles").select("full_name, matricula, colegio_abogados").eq("id", user.id).single();
+        if (data) letrado = { nombre: data.full_name, matricula: data.matricula, colegio: data.colegio_abogados };
+      }
+    } catch { /* sin membrete */ }
+    const html = generarInformeVerificacionHtml({ titulo: titulo ?? "Escrito", resultado: { citas, resumen }, letrado });
+    const w = window.open("", "_blank");
+    if (!w) { toast.error("Permití las ventanas emergentes para exportar el informe."); return; }
+    w.document.write(html);
+    w.document.close();
+  }
 
   const visibles = filtro === "todas" ? citas : citas.filter((c) => c.estado !== "verificada");
 
@@ -35,9 +56,19 @@ export function PanelCitas({ texto, onClose }: { texto: string; onClose: () => v
             Contra la ley completa y las reformas 2024-2026
           </p>
         </div>
-        <button onClick={onClose} className="rounded p-1 hover:bg-black/5" title="Cerrar panel">
-          <X className="h-4 w-4 text-[var(--brand-mute)]" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={exportarInforme}
+            disabled={citas.length === 0}
+            className="flex items-center gap-1 rounded border border-border px-2 py-1 text-[10px] font-semibold text-[var(--brand-navy)] hover:border-[var(--brand-gold)] disabled:opacity-40"
+            title="Informe de verificación normativa (PDF) para adjuntar al legajo o mostrar al cliente"
+          >
+            <FileDown className="h-3 w-3" /> Informe
+          </button>
+          <button onClick={onClose} className="rounded p-1 hover:bg-black/5" title="Cerrar panel">
+            <X className="h-4 w-4 text-[var(--brand-mute)]" />
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 border-b border-border px-4 py-2 text-[10px] font-semibold">

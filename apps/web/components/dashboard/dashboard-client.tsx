@@ -281,7 +281,7 @@ export function DashboardClient({
             ) : (
               <div className="divide-y divide-border">
                 {casos.map(c => (
-                  <div key={c.id} className="flex items-center gap-4 px-6 py-4 hover:bg-[var(--brand-paper)] transition-colors">
+                  <Link key={c.id} href={`/casos/${c.id}`} className="flex items-center gap-4 px-6 py-4 hover:bg-[var(--brand-paper)] transition-colors">
                     <div className="font-mono text-[12px] text-[var(--brand-mute)] w-[100px] shrink-0">
                       {c.expediente ? `EXP ${c.expediente}` : "SIN EXP"}
                     </div>
@@ -294,7 +294,7 @@ export function DashboardClient({
                     <span className="rounded border border-[var(--brand-navy)]/30 bg-[var(--brand-navy)]/5 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-[var(--brand-navy)]">
                       ACTIVO
                     </span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

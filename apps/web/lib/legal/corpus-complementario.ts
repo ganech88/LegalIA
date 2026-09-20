@@ -85,6 +85,7 @@ export const LEYES_COMPLEMENTARIAS: Ley[] = [
     area: "laboral",
     descripcion: "Su art. 45 agrega al art. 80 LCT la indemnizacion por falta de entrega de los certificados de trabajo.",
     articulos: [
+      { numero: "43", titulo: "Retencion indebida de aportes (art. 132 bis LCT)", texto: "Incorpora el art. 132 bis a la LCT: si el empleador hubiere retenido aportes del trabajador con destino a los organismos de la seguridad social o cuotas sindicales y al momento de la extincion no los hubiere ingresado, debera pagar al trabajador una sancion conminatoria mensual equivalente a la remuneracion devengada al momento de la extincion, hasta que acredite el ingreso de los fondos. DEROGADO por el art. 99 de la ley 27.742 (desde el 09/07/2024).", vigencia: { derogado_por: "art. 99 ley 27.742", desde: "2024-07-09" } },
       { numero: "45", titulo: "Sancion por falta de entrega de certificados (art. 80 LCT)", texto: "Si el empleador no hiciera entrega de la constancia o del certificado de trabajo previstos en el art. 80 LCT dentro de los 2 dias habiles computados a partir del dia siguiente a la recepcion del requerimiento fehaciente del trabajador, sera sancionado con una indemnizacion a favor de este ultimo equivalente a 3 veces la mejor remuneracion mensual, normal y habitual percibida durante el ultimo ano o durante el tiempo de prestacion de servicios si este fuere menor.", vigencia: { derogado_por: "art. 99 ley 27.742", desde: "2024-07-09" } },
     ],
   },
