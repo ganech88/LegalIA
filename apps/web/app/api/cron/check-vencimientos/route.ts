@@ -45,7 +45,8 @@ async function latido(): Promise<boolean> {
 async function vigilancia(forzar: boolean): Promise<{ pendientes: ChequeoVigencia[]; enviado: boolean }> {
   const pendientes = pendientesDeVigilancia();
   const esLunes = new Date().getUTCDay() === 1;
-  const admin = process.env.ADMIN_EMAIL;
+  // Casilla de contacto pública de DSF como destino por defecto.
+  const admin = process.env.ADMIN_EMAIL ?? "hola@desarrollosinfronteras.com";
   if (pendientes.length === 0 || !admin || !isEmailConfigured() || !(esLunes || forzar)) {
     return { pendientes, enviado: false };
   }
