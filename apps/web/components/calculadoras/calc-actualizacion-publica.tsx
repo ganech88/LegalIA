@@ -104,7 +104,8 @@ export function CalcActualizacionPublica() {
             <div className="mt-4 rounded border border-[var(--brand-navy)]/20 bg-[var(--brand-navy)]/5 px-4 py-3 text-[12px] text-[var(--brand-ink-2)]">
               <strong className="text-[var(--brand-navy)]">Juicio en trámite (art. 55 ley 27.802):</strong> tasa pasiva BCRA con techo{" "}
               <strong>{formatCurrency(r.art_55.techo_total)}</strong> y piso <strong>{formatCurrency(r.art_55.piso_total)}</strong> (67 % del techo).
-              Varias Salas de la CNAT lo declararon inconstitucional y aplican IPC + 3 % pleno.
+              La CSJN ordenó aplicarlo en juicios en trámite («Cabana Opanasiuk», 05/11/2026):{" "}
+              <Link href="/herramientas/reliquidacion-art-55" className="font-semibold underline underline-offset-2">reliquidar con la tasa pasiva →</Link>
             </div>
             {api.dato_parcial && (
               <p className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">

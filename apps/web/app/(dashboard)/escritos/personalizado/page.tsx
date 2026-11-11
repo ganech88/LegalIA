@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,23 @@ export default function EscritoPersonalizadoPage() {
   const [error, setError] = useState<string | null>(null);
   const [previa, setPrevia] = useState("");
   const [sinGuardar, setSinGuardar] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Prellenado desde una calculadora (p. ej. reliquidación art. 55).
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("legalia:prefill-custom");
+      if (!raw || !formRef.current) return;
+      const data = JSON.parse(raw) as Record<string, unknown>;
+      for (const campo of ["tipo_escrito", "descripcion", "datos_caso"]) {
+        const el = formRef.current.elements.namedItem(campo);
+        if ((el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) && typeof data[campo] === "string") {
+          el.value = data[campo] as string;
+        }
+      }
+      sessionStorage.removeItem("legalia:prefill-custom");
+    } catch { /* sessionStorage no disponible */ }
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -98,7 +115,7 @@ export default function EscritoPersonalizadoPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">
               <Label htmlFor="tipo_escrito">Tipo de escrito *</Label>
               <Input

@@ -48,7 +48,7 @@ const JSON_LD = {
           name: "¿Qué pasa con los juicios que ya estaban en trámite?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "El art. 55 de la ley 27.802 aplica la tasa pasiva del BCRA con un techo en IPC + 3 % y un piso del 67 % de ese techo. La CNAT Sala I y la Cámara del Trabajo de Córdoba lo declararon inconstitucional y aplicaron IPC + 3 % pleno; otras Salas lo aplican. Conviene liquidar de las dos formas.",
+            text: "El art. 55 de la ley 27.802 aplica la tasa pasiva del BCRA con un techo en IPC + 3 % y un piso del 67 % de ese techo. El 5 de noviembre de 2026 la Corte Suprema, en la causa Cabana Opanasiuk c/ Unir S.A., ordenó aplicarlo y dejó sin efecto ocho sentencias de la CNAT que actualizaban por IPC + 3 % pleno. Hoy corresponde liquidar por el art. 55.",
           },
         },
         {
@@ -92,8 +92,9 @@ export default function ActualizacionLey27802Page() {
         <article className="card-editorial p-5">
           <h2 className="mb-2 font-[var(--font-display)] text-[15px] font-semibold text-[var(--brand-navy)]">Art. 55 (juicios en trámite)</h2>
           <p className="text-[12.5px] leading-relaxed text-[var(--brand-ink-2)]">
-            Tasa pasiva BCRA con techo en IPC + 3 % y piso del 67 % del techo. Con impugnaciones de constitucionalidad en varias Salas de la CNAT:
-            presentá ambas liquidaciones y planteá la inconstitucionalidad en subsidio.
+            Tasa pasiva BCRA con techo en IPC + 3 % y piso del 67 % del techo. La CSJN ordenó aplicarlo el 05/11/2026
+            («Cabana Opanasiuk c/ Unir S.A.»): liquidá por art. 55 con la{" "}
+            <a href="/herramientas/reliquidacion-art-55" className="font-semibold underline underline-offset-2">calculadora de tasa pasiva, techo y piso</a>.
           </p>
         </article>
         <article className="card-editorial p-5">

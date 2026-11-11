@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PoweredBy } from "@/components/layout/powered-by";
+import { Turnstile, TURNSTILE_SITE_KEY } from "@/components/auth/turnstile";
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
@@ -13,6 +14,9 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
+  const reiniciarCaptcha = () => { setCaptcha(null); setCaptchaKey((k) => k + 1); };
   const router = useRouter();
   const supabase = createClient();
 
@@ -33,10 +37,12 @@ export default function RegisterPage() {
       options: {
         data: { full_name: fullName },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
+        captchaToken: captcha ?? undefined,
       },
     });
 
     if (authError) {
+      reiniciarCaptcha();
       setError(authError.message);
       setLoading(false);
       return;
@@ -142,9 +148,10 @@ export default function RegisterPage() {
                 </div>
               )}
             </label>
+            <Turnstile key={captchaKey} onToken={setCaptcha} />
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (Boolean(TURNSTILE_SITE_KEY) && !captcha)}
               className="w-full rounded bg-[var(--brand-navy)] px-4 py-3 text-[14px] font-semibold text-white hover:bg-[var(--brand-navy-2)] disabled:opacity-60"
             >
               {loading ? "Creando cuenta..." : "Crear cuenta gratis →"}

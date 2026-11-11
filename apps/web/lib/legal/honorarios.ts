@@ -32,6 +32,8 @@ export const UMA_VALORES: { desde: string; valor: number; resolucion: string }[]
   { desde: "2026-05-01", valor: 100173, resolucion: "Res. CSJN 1718/26" },
   { desde: "2026-06-01", valor: 102076, resolucion: "Res. CSJN 1785/26" },
   { desde: "2026-07-01", valor: 104220, resolucion: "Res. CSJN 1930/26" },
+  { desde: "2026-08-01", valor: 105991, resolucion: "Res. CSJN 2372/26" },
+  { desde: "2026-09-01", valor: 108005, resolucion: "Res. CSJN 2622/26" },
 ];
 
 /** UMA vigente a una fecha (o la última conocida). */

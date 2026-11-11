@@ -227,9 +227,9 @@ export default function ActualizacionPage() {
                   <div className="mt-4 rounded border border-[var(--brand-navy)]/20 bg-[var(--brand-navy)]/5 px-4 py-3 text-[12px] text-[var(--brand-ink-2)]">
                     <strong className="text-[var(--brand-navy)]">Juicios en trámite — art. 55 ley 27.802:</strong> tasa pasiva BCRA del período,
                     con techo en <strong>{formatCurrency(laboral.art_55.techo_total)}</strong> (IPC + 3 %) y piso en{" "}
-                    <strong>{formatCurrency(laboral.art_55.piso_total)}</strong> (67 % del techo). La CNAT Sala I (17/03/2026) y la
-                    Cámara del Trabajo de Córdoba (10/03/2026) declararon inconstitucional el art. 55 y aplicaron IPC + 3 % pleno;
-                    las Salas III y IV lo aplicaron. Conviene liquidar de las dos formas y plantear la inconstitucionalidad en subsidio.
+                    <strong>{formatCurrency(laboral.art_55.piso_total)}</strong> (67 % del techo). La CSJN ordenó aplicarlo en
+                    «Cabana Opanasiuk c/ Unir S.A.» (05/11/2026) y dejó sin efecto ocho sentencias de la CNAT Sala II que usaban IPC + 3 % pleno;
+                    la SCBA ya lo había convalidado. <Link href="/calculadoras/art-55" className="font-semibold underline underline-offset-2">Reliquidar con la tasa pasiva →</Link>
                   </div>
                 )}
 

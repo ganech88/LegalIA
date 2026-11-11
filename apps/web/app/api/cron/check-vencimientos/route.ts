@@ -2,6 +2,8 @@ import { timingSafeEqual } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { sendEmail, isEmailConfigured, escapeHtml } from "@/lib/email/resend";
+import { pendientesDeVigilancia, type ChequeoVigencia } from "@/lib/legal/vigencias";
+import { checkIpRateLimit, getClientIp } from "@/lib/rate-limit";
 
 /**
  * Cron diario (Vercel Cron — ver vercel.json) que avisa por email los
@@ -19,10 +21,55 @@ function autorizado(request: Request): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export async function GET(request: Request) {
-  if (!autorizado(request)) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+/**
+ * Lectura mínima con la clave pública: mantiene activo el proyecto de Supabase
+ * (el plan free se pausa tras 7 días sin actividad) aunque el cron no esté
+ * autorizado. No expone datos.
+ */
+async function latido(): Promise<boolean> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anon) return false;
+  try {
+    const { error } = await createClient(url, anon, { auth: { persistSession: false } })
+      .from("escrito_templates")
+      .select("id")
+      .limit(1);
+    return !error;
+  } catch {
+    return false;
   }
+}
+
+/** Aviso semanal (lunes) al administrador con los datos legales por vencer. */
+async function vigilancia(forzar: boolean): Promise<{ pendientes: ChequeoVigencia[]; enviado: boolean }> {
+  const pendientes = pendientesDeVigilancia();
+  const esLunes = new Date().getUTCDay() === 1;
+  const admin = process.env.ADMIN_EMAIL;
+  if (pendientes.length === 0 || !admin || !isEmailConfigured() || !(esLunes || forzar)) {
+    return { pendientes, enviado: false };
+  }
+  const filas = pendientes
+    .map((c) => `<li><strong>${escapeHtml(c.nombre)}</strong> (${c.estado === "vencido" ? "VENCIDO" : "por vencer"}) — ${escapeHtml(c.detalle)} <a href="${escapeHtml(c.fuente)}">fuente</a></li>`)
+    .join("");
+  const r = await sendEmail({
+    to: admin,
+    subject: `LegalIA · ${pendientes.length} dato(s) legal(es) para actualizar`,
+    html: `<div style="font-family:Georgia,serif;color:#1a1a2e"><h2>Vigilancia normativa</h2><ul>${filas}</ul></div>`,
+  });
+  return { pendientes, enviado: r.ok };
+}
+
+export async function GET(request: Request) {
+  if (!checkIpRateLimit(getClientIp(request), "cron-latido", 6, 60)) {
+    return NextResponse.json({ error: "Demasiadas consultas." }, { status: 429 });
+  }
+  const vivo = await latido();
+  if (!autorizado(request)) {
+    return NextResponse.json({ error: "No autorizado", latido: vivo }, { status: 401 });
+  }
+  const vig = await vigilancia(new URL(request.url).searchParams.get("vigilancia") === "1");
+  const vigResumen = { pendientes: vig.pendientes.map((c) => c.id), enviado: vig.enviado };
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: "Falta service role" }, { status: 503 });
   }
@@ -51,7 +98,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   if (!vencimientos || vencimientos.length === 0) {
-    return NextResponse.json({ ok: true, enviados: 0, mensaje: "Sin vencimientos próximos." });
+    return NextResponse.json({ ok: true, enviados: 0, mensaje: "Sin vencimientos próximos.", vigilancia: vigResumen });
   }
 
   // Agrupar por usuario.
@@ -95,5 +142,5 @@ export async function GET(request: Request) {
     await admin.from("vencimientos").update({ alertado_at: new Date().toISOString() }).in("id", idsAlertados);
   }
 
-  return NextResponse.json({ ok: true, usuarios: porUsuario.size, enviados, emailConfigurado: isEmailConfigured() });
+  return NextResponse.json({ ok: true, usuarios: porUsuario.size, enviados, emailConfigurado: isEmailConfigured(), vigilancia: vigResumen });
 }

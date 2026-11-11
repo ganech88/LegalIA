@@ -67,6 +67,13 @@ export const FERIADOS_ESPECIFICOS = new Set<string>([
   "2026-08-17", // San Martín (lunes)
   "2026-10-12", // Diversidad Cultural (lunes)
   "2026-11-23", // Soberanía Nacional (20/11 viernes → lunes 23)
+  // 2027 (calculado por ley 27.399; el decreto anual de puentes aún no salió)
+  "2027-02-08", "2027-02-09", // Carnaval
+  "2027-03-26", // Viernes Santo
+  "2027-06-21", // Güemes (17/06 jueves → lunes 21)
+  "2027-08-16", // San Martín (17/08 martes → lunes 16)
+  "2027-10-11", // Diversidad Cultural (12/10 martes → lunes 11)
+  "2027-11-20", // Soberanía Nacional (sábado, no se traslada)
 ]);
 
 /**
@@ -91,6 +98,13 @@ export const FERIA_JUDICIAL: Record<number, [string, string][]> = {
   // Invierno 2026: Acordada CSJN 11/2026 (02/06/2026) — 20 al 31 de julio.
   2026: [["2026-01-01", "2026-01-31"], ["2026-07-20", "2026-07-31"]],
 };
+
+/**
+ * Jueves Santo: día no laborable (ley 27.399), no feriado. Los tribunales
+ * suelen declararlo inhábil; por el mismo criterio conservador se cuenta como
+ * hábil y se advierte. (El de 2026 coincidió con el feriado del 2 de abril.)
+ */
+export const JUEVES_SANTO = new Set<string>(["2025-04-17", "2027-03-25"]);
 
 /** Jurisdicción para el plazo de gracia (art. 124 CPCCN: 2 hs; art. 124 CPCC PBA: 4 hs). */
 export type JurisdiccionPlazo = "nacional" | "pba";
@@ -159,6 +173,9 @@ export function calcularVencimiento(params: {
     if (motivo === null) {
       habilesContados++;
       const iso = toISODate(cursor);
+      if (JUEVES_SANTO.has(iso)) {
+        advertencias.push(`${iso.split("-").reverse().join("/")} es Jueves Santo (día no laborable): se contó como hábil (criterio conservador). Si tu tribunal lo declara inhábil, el vencimiento se corre un día.`);
+      }
       if (PUENTES_TURISTICOS.has(iso)) {
         advertencias.push(`${iso.split("-").reverse().join("/")} es día no laborable turístico: se contó como hábil (criterio conservador). Si la CSJN o la SCBA lo declararon inhábil por acordada, el vencimiento se corre un día.`);
       }

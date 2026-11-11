@@ -73,3 +73,16 @@ describe("calcularPrescripcion (calendario)", () => {
     expect(calcularPrescripcion({ desde: "2024-06-14", anios: 2 }).vencimiento).toBe("2026-06-14");
   });
 });
+
+describe("calendario 2027 y Jueves Santo", () => {
+  it("Carnaval 2027 (8 y 9 de febrero) no se cuenta", () => {
+    const r = calcularVencimiento({ desde: "2027-02-05", diasHabiles: 1 });
+    expect(r.vencimiento).toBe("2027-02-10");
+  });
+  it("Jueves Santo 2027 se cuenta como hábil y se advierte", () => {
+    const r = calcularVencimiento({ desde: "2027-03-23", diasHabiles: 1 });
+    // 24/03 es feriado (Memoria): el primer día hábil contado es el jueves 25.
+    expect(r.vencimiento).toBe("2027-03-25");
+    expect(r.advertencias.some((a) => a.includes("Jueves Santo"))).toBe(true);
+  });
+});

@@ -4,12 +4,16 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { PoweredBy } from "@/components/layout/powered-by";
+import { Turnstile, TURNSTILE_SITE_KEY } from "@/components/auth/turnstile";
 
 export default function RecuperarPage() {
   const [email, setEmail] = useState("");
   const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
+  const reiniciarCaptcha = () => { setCaptcha(null); setCaptchaKey((k) => k + 1); };
   const supabase = createClient();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -19,9 +23,11 @@ export default function RecuperarPage() {
 
     const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback?next=/restablecer`,
+      captchaToken: captcha ?? undefined,
     });
 
     if (err) {
+      reiniciarCaptcha();
       setError(
         err.message.includes("rate limit") || err.message.includes("seconds")
           ? "Demasiados intentos. Esperá un minuto y probá de nuevo."
@@ -78,9 +84,10 @@ export default function RecuperarPage() {
                   className="w-full rounded-md border border-border bg-white px-3 py-2.5 text-[13px] transition-colors focus:border-[var(--brand-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold-pale)]"
                 />
               </label>
+              <Turnstile key={captchaKey} onToken={setCaptcha} />
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || (Boolean(TURNSTILE_SITE_KEY) && !captcha)}
                 className="w-full rounded bg-[var(--brand-navy)] px-4 py-3 text-[14px] font-semibold text-white hover:bg-[var(--brand-navy-2)] disabled:opacity-60"
               >
                 {loading ? "Enviando…" : "Enviar enlace de recuperación"}

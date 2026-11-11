@@ -23,6 +23,12 @@ const HERRAMIENTAS = [
     publica: true,
   },
   {
+    href: "/herramientas/reliquidacion-art-55",
+    titulo: "Reliquidación art. 55 — juicios laborales en trámite",
+    desc: "Tasa pasiva del BCRA con techo IPC + 3 % y piso del 67 %, como ordenó la Corte en «Cabana Opanasiuk» (05/11/2026). Con anexo auditable.",
+    publica: true,
+  },
+  {
     href: "/herramientas/plazos-procesales",
     titulo: "Plazos procesales 2026",
     desc: "Días hábiles judiciales con feria de invierno, feriados trasladables y plazo de gracia por jurisdicción.",

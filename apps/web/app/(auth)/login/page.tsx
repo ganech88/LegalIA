@@ -5,12 +5,16 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PoweredBy } from "@/components/layout/powered-by";
+import { Turnstile, TURNSTILE_SITE_KEY } from "@/components/auth/turnstile";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
+  const reiniciarCaptcha = () => { setCaptcha(null); setCaptchaKey((k) => k + 1); };
   const router = useRouter();
   const supabase = createClient();
 
@@ -39,9 +43,11 @@ export default function LoginPage() {
     const { error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
+      options: { captchaToken: captcha ?? undefined },
     });
 
     if (authError) {
+      reiniciarCaptcha();
       setError(
         authError.message === "Invalid login credentials"
           ? "Email o contraseña incorrectos"
@@ -104,9 +110,10 @@ export default function LoginPage() {
                 className="w-full rounded-md border border-border bg-white px-3 py-2.5 text-[13px] transition-colors focus:border-[var(--brand-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold-pale)]"
               />
             </label>
+            <Turnstile key={captchaKey} onToken={setCaptcha} />
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (Boolean(TURNSTILE_SITE_KEY) && !captcha)}
               className="w-full rounded bg-[var(--brand-navy)] px-4 py-3 text-[14px] font-semibold text-white hover:bg-[var(--brand-navy-2)] disabled:opacity-60"
             >
               {loading ? "Ingresando..." : "Ingresar"}
