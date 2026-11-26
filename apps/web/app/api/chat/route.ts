@@ -103,7 +103,7 @@ export async function POST(request: Request) {
     let ragContext: string;
     let fuentesRag: FuenteRag[] = [];
     const semantic = admin
-      ? await buildSemanticContext(admin, consultaRag, { matchCount: 6, threshold: 0.5, maxChars: 4500 })
+      ? await buildSemanticContext(admin, consultaRag, { matchCount: 8, threshold: 0.5, maxChars: 5500 })
       : null;
     let avisoRag: string | undefined;
     if (semantic) {

@@ -83,7 +83,7 @@ export async function descargarInfoleg(id: number): Promise<{ texto: string; url
   throw new Error(`InfoLeg no devolvió la norma ${id} (${ultimo}).`);
 }
 
-const ENCABEZADO = /(ART[IÍ]CULO|Art[ií]culo|ART\.|Art\.)\s*(\d+)\s*(bis|ter|quater|quinquies)?\s*[°ºª]?\s*(?:bis|ter|quater|quinquies)?\s*[.\-—–:]+/g;
+const ENCABEZADO = /(ART[IÍ]CULO|Art[ií]culo|ART\.?|Art\.?)\s*(\d+)\s*(bis|ter|quater|quinquies)?\s*[°ºª]?\s*(?:bis|ter|quater|quinquies)?\s*[.\-—–:]+/g;
 const NOTA = /\((?:Art[ií]culo|Inciso|Apartado|P[áa]rrafo|Nota Infoleg)[^)]{0,600}\)/i;
 
 interface Articulo {
@@ -108,6 +108,9 @@ export function partirEnArticulos(texto: string): Articulo[] {
   const sufijosVistos = new Set<string>();
   for (const c of candidatos) {
     if (c.idx < primero.idx || !mismaForma(c.forma)) continue;
+    // "Sustitúyese el artículo 4° de la ley X por el siguiente: Artículo 4°- ..." — lo que
+    // sigue a esa fórmula es el artículo de la otra ley, aunque esté escrito igual.
+    if (c !== primero && /siguientes?(?:\s+texto)?\s*:\s*["“«'‘]?\s*$/i.test(texto.slice(Math.max(0, c.idx - 120), c.idx))) continue;
     const clave = `${c.n}${c.sufijo}`;
     const siguiente = !c.sufijo && c.n > ultimo && c.n <= ultimo + 6;
     const bis = Boolean(c.sufijo) && c.n === ultimo && !sufijosVistos.has(clave);
@@ -117,10 +120,25 @@ export function partirEnArticulos(texto: string): Articulo[] {
     inicios.push(c);
   }
 
-  return inicios.map((c, i) => ({
+  const articulos = inicios.map((c, i) => ({
     numero: c.sufijo ? `${c.n} ${c.sufijo}` : String(c.n),
     cuerpo: texto.slice(c.fin, i + 1 < inicios.length ? inicios[i + 1].idx : texto.length).trim(),
   }));
+
+  // En los códigos el epígrafe va ANTES del encabezado ("PLAZO" / "Art. 244. - ..."),
+  // así que queda colgado al final del artículo anterior: se pasa al que corresponde.
+  const esTitulo = (l: string) => l.length >= 3 && l.length <= 110 && /[A-ZÁÉÍÓÚÑ]{3}/.test(l) && !/[a-záéíóúñ]/.test(l);
+  for (let i = 0; i + 1 < articulos.length; i++) {
+    const lineas = articulos[i].cuerpo.split("\n");
+    const titulos: string[] = [];
+    while (lineas.length > 1 && esTitulo(lineas[lineas.length - 1].trim())) titulos.unshift(lineas.pop()!.trim());
+    if (titulos.length === 0) continue;
+    articulos[i].cuerpo = lineas.join("\n").trim();
+    const epigrafe = titulos.join(" ").replace(/\s+/g, " ");
+    const sig = articulos[i + 1];
+    sig.cuerpo = `${epigrafe}. ${sig.cuerpo.replace(/^[\s.\-—–]+/, "")}`;
+  }
+  return articulos;
 }
 
 export function chunksDeNorma(texto: string, norma: NormaInfoleg): ChunkLegal[] {

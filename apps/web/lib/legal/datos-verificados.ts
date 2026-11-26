@@ -20,12 +20,12 @@ function bloqueART(hoyISO: string): string {
   return [
     "[Datos verificados de LegalIA — prestaciones dinerarias de la Ley de Riesgos del Trabajo 24.557 (con leyes 26.773 y 27.348)]",
     "- Ingreso base (art. 12, ley 27.348): promedio de las remuneraciones de los 12 meses anteriores a la primera manifestación invalidante, actualizadas por RIPTE.",
-    "- Incapacidad permanente parcial, menor al 66 % (art. 14.2): 53 × ingreso base × (% de incapacidad / 100) × (65 / edad). Piso: el piso del art. 14 multiplicado por el porcentaje de incapacidad. Si la incapacidad es mayor al 50 % y menor al 66 %, se suma la compensación del art. 11.4.a.",
+    "- Incapacidad permanente parcial, menor al 66 % (art. 14.2): 53 × ingreso base × (% de incapacidad / 100) × (65 / edad). Piso: el importe del piso del art. 14.2 MULTIPLICADO por el porcentaje de incapacidad (con 30 % de incapacidad el piso es el 30 % de ese importe, nunca el importe entero); se paga el mayor entre la fórmula y ese piso proporcional. Si la incapacidad es mayor al 50 % y menor al 66 %, se suma la compensación del art. 11.4.a.",
     "- Incapacidad permanente total, 66 % o más (art. 15.2): 53 × ingreso base × (65 / edad), sin multiplicar por el porcentaje, más la compensación del art. 11.4.b.",
     "- Muerte (art. 18): igual que la total, más la compensación del art. 11.4.c.",
     "- Adicional del 20 % (art. 3, ley 26.773): si el daño ocurrió en el lugar de trabajo o a disposición del empleador; no corresponde en accidentes in itinere.",
     "- Incapacidad laboral temporaria (art. 13): prestación mensual según el art. 208 LCT; los primeros 10 días los paga el empleador.",
-    `- Importes vigentes del ${fecha(p.vigencia_desde)} al ${fecha(p.vigencia_hasta)} — ${p.fuente}: piso art. 14.2 ${ars(p.piso_art_14)} (por el % de incapacidad); piso arts. 15.2 y 18 ${ars(p.piso_art_15)}; compensaciones art. 11.4: a) ${ars(p.compensacion_11_4_a)}, b) ${ars(p.compensacion_11_4_b)}, c) ${ars(p.compensacion_11_4_c)}; mínimo del adicional del art. 3 ley 26.773 ${ars(p.minimo_art_3_26773)}.`,
+    `- Importes vigentes del ${fecha(p.vigencia_desde)} al ${fecha(p.vigencia_hasta)} — ${p.fuente}: piso art. 14.2 ${ars(p.piso_art_14)} (por el % de incapacidad); piso arts. 15.2 y 18 ${ars(p.piso_art_15)}; compensaciones art. 11.4: a) ${ars(p.compensacion_11_4_a)}, b) ${ars(p.compensacion_11_4_b)}, c) ${ars(p.compensacion_11_4_c)}; mínimo del adicional del art. 3 ley 26.773 ${ars(p.minimo_art_3_26773)} (ese mínimo rige solo en caso de muerte o incapacidad total; el adicional es el 20 % de la indemnización y no corresponde en accidentes in itinere).`,
     "- Se aplican los importes vigentes a la fecha de la primera manifestación invalidante. Para liquidar un caso, LegalIA tiene la calculadora en /calculadoras/art-ley-24557.",
   ].join("\n");
 }

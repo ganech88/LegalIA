@@ -59,6 +59,36 @@ describe("partirEnArticulos", () => {
     expect(a[2].cuerpo).toContain("Artículo 231.- Plazos");
   });
 
+  it("no confunde el artículo sustituido con uno propio aunque esté escrito igual", () => {
+    const t = [
+      "Artículo 1°- Sustitúyese el artículo 2° de la Ley de Contrato de Trabajo por el siguiente:",
+      "Artículo 2°- Ámbito de aplicación. La vigencia de esta ley quedará condicionada a su compatibilidad.",
+      "Artículo 2°- Sustitúyese el artículo 4° de la Ley de Contrato de Trabajo por el siguiente:",
+      "Artículo 4°- Concepto de trabajo. Constituye trabajo toda actividad lícita prestada a favor de otro.",
+      "Artículo 3°- Sustitúyese el artículo 9° de la misma ley por el siguiente:",
+      "Artículo 9°- El principio de la norma más favorable para el trabajador rige en caso de duda.",
+      "Artículo 4°- Comuníquese al Poder Ejecutivo nacional, con las formalidades de estilo.",
+    ].join("\n");
+    const a = partirEnArticulos(t);
+    expect(a.map((x) => x.numero)).toEqual(["1", "2", "3", "4"]);
+    expect(a[0].cuerpo).toContain("Ámbito de aplicación");
+    expect(a[1].cuerpo).toContain("Concepto de trabajo");
+    expect(a[3].cuerpo).toContain("Comuníquese");
+  });
+
+  it("acepta 'Art 684.' sin punto después de Art", () => {
+    const a = partirEnArticulos("Art. 1. - Uno, con texto suficiente.\nArt 2. - Dos, con texto suficiente.\nArt. 3. - Tres, con texto suficiente.");
+    expect(a.map((x) => x.numero)).toEqual(["1", "2", "3"]);
+  });
+
+  it("el epígrafe que precede al encabezado pasa al artículo que titula", () => {
+    const t = "Art. 1. - Los recursos se concederán en efecto suspensivo.\nPLAZO\nArt. 2. - No habiendo disposiciones en contrario, el plazo para apelar será de CINCO (5) días.\nFORMA DE INTERPOSICION DEL RECURSO\nArt. 3. - El recurso de apelación se interpondrá por escrito o verbalmente.";
+    const a = partirEnArticulos(t);
+    expect(a[0].cuerpo).not.toContain("PLAZO");
+    expect(a[1].cuerpo.startsWith("PLAZO. No habiendo")).toBe(true);
+    expect(a[2].cuerpo.startsWith("FORMA DE INTERPOSICION DEL RECURSO. El recurso")).toBe(true);
+  });
+
   it("tolera un artículo faltante sin perder los siguientes", () => {
     const a = partirEnArticulos("ARTICULO 1° — Uno, con texto suficiente.\nARTICULO 2° — Dos, con texto suficiente.\nARTICULO 5° — Cinco, con texto suficiente.");
     expect(a.map((x) => x.numero)).toEqual(["1", "2", "5"]);
