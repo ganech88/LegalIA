@@ -43,7 +43,9 @@ function armar(filas: FilaRag[], maxChars: number, modo: "semantica" | "texto"):
     const encabezado = f.article_number
       ? `[${f.source_name} — Art. ${f.article_number}${f.title ? `: ${f.title}` : ""}]`
       : `[${f.source_name}${f.title ? ` — ${f.title}` : ""}]`;
-    const chunk = `${encabezado}\n${f.content}`;
+    // Un artículo muy largo no debe dejar afuera a los demás: se recorta.
+    const cuerpo = f.content.length > 1600 ? `${f.content.slice(0, 1600)} […]` : f.content;
+    const chunk = `${encabezado}\n${cuerpo}`;
     if (total + chunk.length > maxChars) break;
     chunks.push(chunk);
     total += chunk.length;

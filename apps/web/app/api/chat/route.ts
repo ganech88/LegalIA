@@ -69,7 +69,7 @@ export async function POST(request: Request) {
   // Perfil del letrado (ficha) y plan.
   const { data: perfil } = await lector
     .from("profiles")
-    .select("plan, especialidad, jurisdiccion_principal, colegio_abogados, perfil_ia")
+    .select("plan, especialidad, jurisdiccion_principal, colegio_abogados, perfil_ia, es_admin")
     .eq("id", user.id)
     .maybeSingle();
   const { data: planEfectivo } = await lector.rpc("plan_efectivo", { p_user_id: user.id });
@@ -85,15 +85,18 @@ export async function POST(request: Request) {
     .eq("user_id", user.id)
     .gte("created_at", inicioDia.toISOString());
   const tokensHoy = (usoHoy ?? []).reduce((acc, r) => acc + (r.tokens_input ?? 0) + (r.tokens_output ?? 0), 0);
-  if (tokensHoy >= topeTokensDia(plan)) {
+  // El administrador prueba el asistente sin topes (ni diario ni mensual).
+  const esAdmin = Boolean((perfil as { es_admin?: boolean } | null)?.es_admin);
+  if (!esAdmin && tokensHoy >= topeTokensDia(plan)) {
     return NextResponse.json(
       { error: "Alcanzaste el tope diario de uso del asistente de tu plan. Se renueva mañana." },
       { status: 429 },
     );
   }
 
-  const cuota = await reservarCuota(supabase, user.id, "consulta");
-  if (!cuota.ok) return cuota.response;
+  const reserva = esAdmin ? null : await reservarCuota(supabase, user.id, "consulta");
+  if (reserva && !reserva.ok) return reserva.response;
+  const cuota = { refund: async () => { if (reserva?.ok) await reserva.refund(); } };
 
   try {
     // Base legal: búsqueda semántica (con la consulta anterior si es una
