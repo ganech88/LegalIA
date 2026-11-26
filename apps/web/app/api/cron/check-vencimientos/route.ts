@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { sendEmail, isEmailConfigured, escapeHtml } from "@/lib/email/resend";
 import { pendientesDeVigilancia, type ChequeoVigencia } from "@/lib/legal/vigencias";
 import { checkIpRateLimit, getClientIp } from "@/lib/rate-limit";
+import { consumoDesde } from "@/lib/ai/consumo";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Cron diario (Vercel Cron — ver vercel.json) que avisa por email los
@@ -61,6 +63,27 @@ async function vigilancia(forzar: boolean): Promise<{ pendientes: ChequeoVigenci
   return { pendientes, enviado: r.ok };
 }
 
+/** Aviso si el gasto estimado de IA de ayer superó el umbral (ALERTA_GASTO_USD, por defecto 5). */
+async function alertaGasto(): Promise<{ usd: number; enviado: boolean }> {
+  const admin = createAdminClient();
+  if (!admin) return { usd: 0, enviado: false };
+  const hoy = new Date();
+  hoy.setUTCHours(0, 0, 0, 0);
+  const ayer = new Date(hoy.getTime() - 86400000);
+  const r = await consumoDesde(admin, ayer.toISOString(), hoy.toISOString());
+  const umbral = Number(process.env.ALERTA_GASTO_USD ?? 5);
+  if (r.usd < umbral || !isEmailConfigured()) return { usd: r.usd, enviado: false };
+  const top = r.porUsuario.slice(0, 5)
+    .map((u) => `<li>${escapeHtml(u.user_id.slice(0, 8))}: US$ ${u.usd.toFixed(2)} (${u.consultas} consultas, ${u.escritos} escritos)</li>`)
+    .join("");
+  const envio = await sendEmail({
+    to: process.env.ADMIN_EMAIL ?? "hola@desarrollosinfronteras.com",
+    subject: `LegalIA · gasto de IA de ayer: US$ ${r.usd.toFixed(2)}`,
+    html: `<div style="font-family:Georgia,serif;color:#1a1a2e"><h2>Gasto estimado de IA</h2><p>Ayer: <strong>US$ ${r.usd.toFixed(2)}</strong> (umbral US$ ${umbral}).</p><ul>${top}</ul><p>Detalle en /admin/consumo.</p></div>`,
+  });
+  return { usd: r.usd, enviado: envio.ok };
+}
+
 export async function GET(request: Request) {
   if (!checkIpRateLimit(getClientIp(request), "cron-latido", 6, 60)) {
     return NextResponse.json({ error: "Demasiadas consultas." }, { status: 429 });
@@ -70,7 +93,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "No autorizado", latido: vivo }, { status: 401 });
   }
   const vig = await vigilancia(new URL(request.url).searchParams.get("vigilancia") === "1");
-  const vigResumen = { pendientes: vig.pendientes.map((c) => c.id), enviado: vig.enviado };
+  const gasto = await alertaGasto().catch(() => ({ usd: 0, enviado: false }));
+  const vigResumen = { pendientes: vig.pendientes.map((c) => c.id), enviado: vig.enviado, gasto_ayer_usd: Number(gasto.usd.toFixed(3)), alerta_gasto: gasto.enviado };
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: "Falta service role" }, { status: 503 });
   }

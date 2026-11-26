@@ -10,6 +10,8 @@ interface Message {
   content: string;
   id?: string;
   feedback?: "util" | "no_util";
+  /** Consulta de una visita anterior: se muestra, pero no viaja como contexto. */
+  previo?: boolean;
 }
 
 const SUGGESTIONS = [
@@ -26,6 +28,7 @@ export default function AsistentePage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [caso, setCaso] = useState<{ id: string; caratula: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // CHAT PERSISTENTE: al entrar se recuperan las últimas consultas guardadas,
@@ -42,15 +45,21 @@ export default function AsistentePage() {
         const historial: Message[] = [...data]
           .reverse()
           .flatMap((c) => [
-            { role: "user" as const, content: c.pregunta },
-            { role: "assistant" as const, content: c.respuesta, id: c.id, feedback: (c.feedback as Message["feedback"]) ?? undefined },
+            { role: "user" as const, content: c.pregunta, previo: true },
+            { role: "assistant" as const, content: c.respuesta, id: c.id, feedback: (c.feedback as Message["feedback"]) ?? undefined, previo: true },
           ]);
         setMessages((prev) => (prev.length === 0 ? historial : prev));
       }
       setHistoryLoaded(true);
       // ?q= desde el buscador del dashboard: se envía directo.
       try {
-        const q = new URLSearchParams(window.location.search).get("q");
+        const params = new URLSearchParams(window.location.search);
+        const casoId = params.get("caso");
+        if (casoId) {
+          const { data: c } = await supabase.from("casos").select("id, caratula").eq("id", casoId).maybeSingle();
+          if (c) setCaso({ id: c.id, caratula: c.caratula });
+        }
+        const q = params.get("q");
         if (q && q.trim()) {
           setInput(q.trim());
           window.history.replaceState(null, "", "/asistente");
@@ -96,15 +105,19 @@ export default function AsistentePage() {
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setLoading(true);
 
-    // Últimos turnos como contexto (el backend recorta a 6).
-    const historial = messages.slice(-6).map((m) => ({ role: m.role, content: m.content.slice(0, 3000) }));
+    // Solo la conversación en curso: las consultas de visitas anteriores no
+    // tienen que ver con esta y gastaban tokens en cada mensaje.
+    const historial = messages
+      .filter((m) => !m.previo)
+      .slice(-4)
+      .map((m) => ({ role: m.role, content: m.content.slice(0, 1500) }));
 
     let res: Response;
     try {
       res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage, historial }),
+        body: JSON.stringify({ message: userMessage, historial, caso_id: caso?.id }),
       });
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "No pudimos conectarnos con el servidor. Revisá tu conexión e intentá de nuevo." }]);
@@ -260,6 +273,12 @@ export default function AsistentePage() {
           </div>
 
           {/* Input */}
+          {caso && (
+            <div className="flex items-center justify-between gap-3 border-t border-border bg-[var(--brand-gold-pale)] px-5 py-2 text-[12px] text-[var(--brand-navy)]">
+              <span>Consultando sobre el caso <strong>{caso.caratula}</strong></span>
+              <button type="button" onClick={() => setCaso(null)} className="underline underline-offset-2">Quitar</button>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="border-t border-border bg-white px-5 py-4">
             <div className="mb-2.5 flex flex-wrap gap-1.5">
               {SUGGESTIONS.map(s => (

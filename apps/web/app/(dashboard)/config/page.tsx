@@ -22,6 +22,7 @@ export default function ConfigPage() {
   const [jurisdiccion, setJurisdiccion] = useState<Jurisdiccion | "">("");
   const [estudioNombre, setEstudioNombre] = useState("");
   const [estiloRedaccion, setEstiloRedaccion] = useState("");
+  const [perfilIa, setPerfilIa] = useState("");
   const [pwdNueva, setPwdNueva] = useState("");
   const [pwdConfirmar, setPwdConfirmar] = useState("");
   const [pwdMsg, setPwdMsg] = useState<{ ok: boolean; texto: string } | null>(null);
@@ -72,6 +73,7 @@ export default function ConfigPage() {
         setJurisdiccion((p.jurisdiccion_principal ?? "") as Jurisdiccion | "");
         setEstudioNombre(p.estudio_nombre ?? "");
         setEstiloRedaccion((data as { estilo_redaccion?: string | null }).estilo_redaccion ?? "");
+        setPerfilIa((data as { perfil_ia?: string | null }).perfil_ia ?? "");
       }
       setLoading(false);
     }
@@ -102,6 +104,7 @@ export default function ConfigPage() {
         jurisdiccion_principal: jurisdiccion || null,
         estudio_nombre: estudioNombre || null,
         estilo_redaccion: estiloRedaccion.trim() || null,
+        perfil_ia: perfilIa.trim() || null,
       })
       .eq("id", user.id);
 
@@ -316,6 +319,24 @@ export default function ConfigPage() {
             className="w-full rounded border border-border bg-white px-3 py-2.5 text-[13px] focus:border-[var(--brand-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold-pale)]"
           />
           <p className="mt-1 text-right text-[10px] text-[var(--brand-mute)]">{estiloRedaccion.length}/1500</p>
+        </section>
+
+        {/* Ficha para el asistente */}
+        <section className="card-editorial p-6 mb-6">
+          <div className="t-overline text-[var(--brand-gold)] mb-1.5">FICHA PARA EL ASISTENTE</div>
+          <p className="mb-3 text-[12px] text-[var(--brand-mute)]">
+            Lo que el asistente tiene en cuenta en cada consulta, además de tu especialidad y jurisdicción. LegalIA la va
+            completando sola a partir de tus consultas (sin datos de clientes ni de casos) y vos podés corregirla acá.
+          </p>
+          <textarea
+            value={perfilIa}
+            onChange={e => setPerfilIa(e.target.value)}
+            maxLength={700}
+            rows={4}
+            placeholder={'Ej.: "Litigo en el fuero laboral de PBA (Morón y San Martín), casi siempre por la parte actora. Quiero respuestas cortas, con el artículo y el plazo primero."'}
+            className="w-full rounded border border-border bg-white px-3 py-2.5 text-[13px] focus:border-[var(--brand-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold-pale)]"
+          />
+          <p className="mt-1 text-right text-[10px] text-[var(--brand-mute)]">{perfilIa.length}/700</p>
         </section>
 
         {/* Cambio de contraseña */}

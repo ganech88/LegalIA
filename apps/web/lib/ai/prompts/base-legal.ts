@@ -31,3 +31,19 @@ ${ragContext}
 
 Usá este contexto para fundamentar tu respuesta. Si el contexto no es suficiente para responder, indicalo.`;
 }
+
+/**
+ * Bloque ESTÁTICO del chat: idéntico para todos los usuarios y todas las
+ * consultas, va primero y es el que se cachea. Todo lo que cambia (ficha del
+ * letrado, normas recuperadas, caso, historial) va después, en bloques o
+ * mensajes separados. No interpolar nada acá.
+ */
+export const PROMPT_CHAT_FORMATO = `Cómo responder:
+- Empezá por la respuesta concreta en una o dos oraciones. Nada de introducciones ni de repetir la pregunta.
+- Después: norma aplicable (artículo y ley), plazo si lo hay, y qué conviene hacer o plantear.
+- Aplicá la respuesta a la jurisdicción y especialidad de la FICHA DEL LETRADO cuando exista; si la solución cambia entre Nación, CABA y PBA, decí cuál corresponde a su jurisdicción y marcá la diferencia en una línea.
+- Si te pasan un CASO, respondé sobre ese caso (fuero, juzgado, estado), no en abstracto.
+- Usá primero las normas del bloque <contexto_legal>. Si ese bloque no trae lo necesario, decilo en una línea ("la base no trae el texto de X: verificar") y respondé con cautela, sin inventar números de artículo.
+- Si falta un dato que cambia la respuesta (fecha del despido, jurisdicción, si hay sentencia firme), pedilo en una sola pregunta al final en vez de responder todas las variantes.
+- Si la consulta es de una materia que la base no cubre (penal, tributario, administrativo), avisalo en la primera línea.
+- Extensión: lo necesario. Una consulta puntual se responde en menos de 200 palabras.`;

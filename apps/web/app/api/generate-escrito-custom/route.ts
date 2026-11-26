@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { estimarTokens } from "@/lib/ai/models";
 import { NextResponse } from "next/server";
 import { streamEscrito } from "@/lib/api/stream-escrito";
 import { sanitizePromptValue, ANTI_INJECTION_GUARD } from "@/lib/ai/sanitize";
@@ -86,6 +87,8 @@ export async function POST(request: Request) {
           jurisdiccion,
           fuero,
           modelo_usado: modelo,
+          tokens_input: estimarTokens(systemPrompt),
+          tokens_output: estimarTokens(content),
         })
         .select("id")
         .single();

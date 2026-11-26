@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { MODELOS } from "@/lib/ai/models";
 import { NextResponse } from "next/server";
 import { getAnthropicClient } from "@/lib/ai/anthropic";
 import { checkIpRateLimit, getClientIp } from "@/lib/rate-limit";
@@ -122,7 +123,7 @@ export async function POST(request: Request) {
 
     const anthropic = getAnthropicClient();
     const respuesta = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+      model: MODELOS.anthropicEscrito,
       max_tokens: 2048,
       temperature: 0.2,
       system: (modo === "cedula" ? PROMPT_CEDULA : PROMPT_DEMANDA) + "\n\n" + CONTEXTO_REFORMAS_2024_2026,

@@ -60,11 +60,11 @@ export const PLANS: Record<PlanId, PlanDef> = {
     id: "estudio",
     name: "Estudio",
     priceARS: 30000,
-    escritosMes: null,
+    escritosMes: 60,
     consultasMes: null,
     maxUsuarios: 5,
     features: [
-      "Escritos ilimitados",
+      "60 escritos por usuario al mes (300 para el estudio)",
       "Hasta 5 usuarios del estudio",
       "Mini CRM de casos compartidos",
       "Estilo de redacción personalizado",

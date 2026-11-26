@@ -95,7 +95,7 @@ export interface ConsultaIA {
 export const PLAN_LIMITS = {
   free: { escritos_mes: 3, consultas_mes: 20 },
   profesional: { escritos_mes: 30, consultas_mes: Infinity },
-  estudio: { escritos_mes: Infinity, consultas_mes: Infinity },
+  estudio: { escritos_mes: 60, consultas_mes: Infinity },
 } as const;
 
 export const COLEGIOS_ABOGADOS = [

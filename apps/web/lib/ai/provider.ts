@@ -3,20 +3,43 @@
  *
  * ORDEN POR DEFECTO según el tipo de tarea:
  *  - Escritos: anthropic → groq → gemini  (calidad primero)
- *  - Chat:     groq → gemini → anthropic  (costo/latencia primero)
+ *  - Chat:     según el plan del usuario (ver ordenChatPorPlan)
  *
  * Se puede sobreescribir con variables de entorno (lista separada por comas):
  *   AI_PROVIDER_ORDER   orden global
  *   AI_ESCRITO_ORDER    orden solo para escritos
  *   AI_CHAT_ORDER       orden solo para el chat
+ * Los IDs de modelo están en lib/ai/models.ts (también con override por env).
  *
  * COMPLIANCE (Ley 25.326 / secreto profesional): los escritos contienen datos
  * personales y confidenciales de las partes. Conviene priorizar para escritos un
  * proveedor cuyos términos NO usen los datos para entrenar modelos. Verificar las
  * políticas de cada proveedor antes de procesar datos reales de clientes.
  */
+import { MODELOS } from "./models";
 
 export type Provider = "groq" | "gemini" | "anthropic" | "demo";
+export type Kind = "escrito" | "chat";
+
+export interface Turno {
+  role: "user" | "assistant";
+  content: string;
+}
+
+/**
+ * Entrada de una generación. `bloques` es el system prompt partido de lo más
+ * estable a lo más variable: el primer bloque es idéntico para todos los
+ * usuarios y es el que se marca para caché.
+ */
+export interface Entrada {
+  bloques: string[];
+  mensajes: Turno[];
+}
+
+export interface Fallo {
+  provider: Provider;
+  error: string;
+}
 
 const ALL_PROVIDERS: Provider[] = ["groq", "gemini", "anthropic"];
 
@@ -41,167 +64,197 @@ function parseOrder(value: string | undefined): Provider[] | null {
   return parsed.length ? parsed : null;
 }
 
-function availableProviders(kind: "escrito" | "chat"): Provider[] {
+/**
+ * Orden del chat según el plan. Las cuotas gratuitas de Groq y Google son por
+ * proyecto (una sola bolsa para toda la plataforma), no por usuario: no
+ * escalan. Por eso el usuario pago va primero al modelo pago —lo financia su
+ * suscripción— y el plan gratis usa primero las cuotas gratuitas.
+ */
+export function ordenChatPorPlan(plan: string | null | undefined): Provider[] {
+  return plan && plan !== "free" ? ["anthropic", "gemini", "groq"] : ["gemini", "groq", "anthropic"];
+}
+
+function availableProviders(kind: Kind, preferido?: Provider[]): Provider[] {
   const escritoDefault: Provider[] = ["anthropic", "groq", "gemini"];
-  const chatDefault: Provider[] = ["groq", "gemini", "anthropic"];
   const specific = kind === "escrito"
     ? parseOrder(process.env.AI_ESCRITO_ORDER)
     : parseOrder(process.env.AI_CHAT_ORDER);
   const order =
     specific ??
     parseOrder(process.env.AI_PROVIDER_ORDER) ??
-    (kind === "escrito" ? escritoDefault : chatDefault);
+    (kind === "escrito" ? escritoDefault : preferido ?? ordenChatPorPlan(null));
   return order.filter(providerHasKey);
 }
 
-// --- Non-streaming generation (for escritos) ---
-
-async function generateWithGroq(
-  systemPrompt: string,
-  userMessage: string,
-  temperature: number,
-  maxTokens: number,
-): Promise<string> {
-  const { groqChat } = await import("@/lib/ai/groq");
-  return groqChat(systemPrompt, userMessage, { temperature, maxTokens });
+function registrarFallo(fallos: Fallo[], provider: Provider, err: unknown) {
+  const error = err instanceof Error ? err.message : String(err);
+  fallos.push({ provider, error: error.slice(0, 300) });
+  // Un proveedor caído no debe pasar inadvertido (así se retiraron dos modelos sin que nadie lo viera).
+  console.warn(`[ia] ${provider} falló, se prueba el siguiente: ${error.slice(0, 300)}`);
 }
 
-async function generateWithGemini(
-  systemPrompt: string,
-  userMessage: string,
-  temperature: number,
-  maxTokens: number,
-): Promise<string> {
-  const { getGeminiClient, GEMINI_FLASH_MODEL } = await import("@/lib/ai/gemini");
-  const gemini = getGeminiClient();
-  const response = await gemini.models.generateContent({
-    model: GEMINI_FLASH_MODEL,
-    config: {
-      systemInstruction: systemPrompt,
-      temperature,
-      maxOutputTokens: maxTokens,
-    },
-    contents: [{ role: "user", parts: [{ text: userMessage }] }],
-  });
-  return response.text ?? "";
+/** El historial debe empezar con el usuario y alternar roles; se descarta lo que no cumpla. */
+export function normalizarMensajes(mensajes: Turno[]): Turno[] {
+  const out: Turno[] = [];
+  for (const m of mensajes) {
+    if (!m.content?.trim()) continue;
+    const ultimo = out[out.length - 1];
+    if (!ultimo && m.role !== "user") continue;
+    if (ultimo && ultimo.role === m.role) {
+      ultimo.content += `\n\n${m.content}`;
+    } else {
+      out.push({ role: m.role, content: m.content });
+    }
+  }
+  while (out.length && out[out.length - 1].role !== "user") out.pop();
+  return out;
 }
 
-async function generateWithAnthropic(
-  systemPrompt: string,
-  userMessage: string,
-  temperature: number,
-  maxTokens: number,
-): Promise<string> {
+const sistemaPlano = (e: Entrada) => e.bloques.filter(Boolean).join("\n\n");
+
+function sistemaAnthropic(e: Entrada) {
+  return e.bloques.filter(Boolean).map((text, i) =>
+    i === 0 ? { type: "text" as const, text, cache_control: { type: "ephemeral" as const } } : { type: "text" as const, text },
+  );
+}
+
+const modeloAnthropic = (kind: Kind) => (kind === "escrito" ? MODELOS.anthropicEscrito : MODELOS.anthropicChat);
+
+// --- Generación sin streaming ---
+
+async function generar(provider: Provider, e: Entrada, temperature: number, maxTokens: number, kind: Kind): Promise<string> {
+  if (provider === "groq") {
+    const { groqChat } = await import("@/lib/ai/groq");
+    return groqChat([{ role: "system", content: sistemaPlano(e) }, ...e.mensajes], { temperature, maxTokens });
+  }
+  if (provider === "gemini") {
+    const { getGeminiClient, GEMINI_FLASH_MODEL } = await import("@/lib/ai/gemini");
+    const response = await getGeminiClient().models.generateContent({
+      model: GEMINI_FLASH_MODEL,
+      config: { systemInstruction: sistemaPlano(e), temperature, maxOutputTokens: maxTokens },
+      contents: e.mensajes.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
+    });
+    const texto = response.text ?? "";
+    if (!texto.trim()) throw new Error("Gemini devolvió una respuesta vacía");
+    return texto;
+  }
   const { getAnthropicClient } = await import("@/lib/ai/anthropic");
-  const anthropic = getAnthropicClient();
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
+  const response = await getAnthropicClient().messages.create({
+    model: modeloAnthropic(kind),
     max_tokens: maxTokens,
     temperature,
-    system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: userMessage }],
+    system: sistemaAnthropic(e),
+    messages: e.mensajes,
   });
   const textBlock = response.content.find((b) => b.type === "text");
   return textBlock?.text ?? "";
 }
 
-const generators: Record<Provider, typeof generateWithGroq> = {
-  groq: generateWithGroq,
-  gemini: generateWithGemini,
-  anthropic: generateWithAnthropic,
-  demo: async () => "",
-};
-
 export async function generateWithFallback(
   systemPrompt: string,
   userMessage: string,
-  options?: { temperature?: number; maxTokens?: number },
+  options?: { temperature?: number; maxTokens?: number; kind?: Kind; orden?: Provider[] },
 ): Promise<GenerateResult> {
-  const providers = availableProviders("escrito");
+  const kind = options?.kind ?? "escrito";
+  const providers = availableProviders(kind, options?.orden);
   const temp = options?.temperature ?? 0.3;
   const maxTok = options?.maxTokens ?? 4096;
+  if (providers.length === 0) return { content: "", provider: "demo" };
 
-  if (providers.length === 0) {
-    return { content: "", provider: "demo" };
-  }
-
-  for (let i = 0; i < providers.length; i++) {
-    const provider = providers[i];
+  const entrada: Entrada = { bloques: [systemPrompt], mensajes: [{ role: "user", content: userMessage }] };
+  const fallos: Fallo[] = [];
+  for (const provider of providers) {
     try {
-      const content = await generators[provider](systemPrompt, userMessage, temp, maxTok);
-      return { content, provider };
-    } catch {
-      // If last provider, throw
-      if (i === providers.length - 1) {
-        throw new Error(`All AI providers failed. Last tried: ${provider}`);
-      }
-      // Otherwise try next provider
+      return { content: await generar(provider, entrada, temp, maxTok, kind), provider };
+    } catch (err) {
+      registrarFallo(fallos, provider, err);
     }
   }
-
-  return { content: "", provider: "demo" };
+  throw new Error(`All AI providers failed. Last tried: ${providers[providers.length - 1]}`);
 }
 
-// --- Streaming generation (for chat) ---
+// --- Generación con streaming ---
 
-export async function streamWithFallback(
-  systemPrompt: string,
-  userMessage: string,
-  options?: { temperature?: number; maxTokens?: number; kind?: "chat" | "escrito" },
-): Promise<{ stream: ReadableStream<Uint8Array>; provider: Provider; collectResponse: () => string }> {
+export interface StreamResult {
+  stream: ReadableStream<Uint8Array>;
+  provider: Provider;
+  collectResponse: () => string;
+  /** Proveedores que fallaron antes del que respondió. */
+  fallos: Fallo[];
+}
+
+/** Streaming con la entrada completa (bloques de sistema + historial como mensajes reales). */
+export async function streamEntradaWithFallback(
+  entrada: Entrada,
+  options?: { temperature?: number; maxTokens?: number; kind?: Kind; orden?: Provider[] },
+): Promise<StreamResult> {
   const kind = options?.kind ?? "chat";
-  const providers = availableProviders(kind);
+  const providers = availableProviders(kind, options?.orden);
   const temp = options?.temperature ?? 0.5;
   const maxTok = options?.maxTokens ?? 2048;
 
   if (providers.length === 0) {
-    const encoder = new TextEncoder();
     const text = `[MODO DEMO — Sin API key configurada]\n\nConfigurá GROQ_API_KEY, GOOGLE_AI_API_KEY o ANTHROPIC_API_KEY en .env.local`;
-    const collected = text;
     return {
       stream: new ReadableStream({
         start(controller) {
-          controller.enqueue(encoder.encode(text));
+          controller.enqueue(new TextEncoder().encode(text));
           controller.close();
         },
       }),
       provider: "demo",
-      collectResponse: () => collected,
+      collectResponse: () => text,
+      fallos: [],
     };
   }
 
-  for (let i = 0; i < providers.length; i++) {
-    const provider = providers[i];
+  const limpia: Entrada = { bloques: entrada.bloques, mensajes: normalizarMensajes(entrada.mensajes) };
+  const fallos: Fallo[] = [];
+  for (const provider of providers) {
     try {
-      const result = await buildStream(provider, systemPrompt, userMessage, temp, maxTok, kind);
-      return { ...result, provider };
-    } catch {
-      if (i === providers.length - 1) {
-        throw new Error(`All AI providers failed. Last tried: ${provider}`);
-      }
+      const result = await buildStream(provider, limpia, temp, maxTok, kind);
+      return { ...result, provider, fallos };
+    } catch (err) {
+      registrarFallo(fallos, provider, err);
     }
   }
+  throw new Error(`All AI providers failed. Last tried: ${providers[providers.length - 1]}`);
+}
 
-  throw new Error("No providers available");
+/** Firma anterior (un system prompt + un mensaje): la usan los escritos. */
+export async function streamWithFallback(
+  systemPrompt: string,
+  userMessage: string,
+  options?: { temperature?: number; maxTokens?: number; kind?: Kind },
+): Promise<StreamResult> {
+  return streamEntradaWithFallback(
+    { bloques: [systemPrompt], mensajes: [{ role: "user", content: userMessage }] },
+    options,
+  );
 }
 
 async function buildStream(
   provider: Provider,
-  systemPrompt: string,
-  userMessage: string,
+  e: Entrada,
   temperature: number,
   maxTokens: number,
-  kind: "chat" | "escrito" = "chat",
+  kind: Kind,
 ): Promise<{ stream: ReadableStream<Uint8Array>; collectResponse: () => string }> {
   let fullResponse = "";
   const encoder = new TextEncoder();
+  const emitirError = (controller: ReadableStreamDefaultController<Uint8Array>, err: unknown) => {
+    const msg = err instanceof Error ? err.message : "Error";
+    controller.enqueue(encoder.encode(`\n\n[Error: ${msg}]`));
+  };
 
   if (provider === "groq") {
     const { groqChatStream } = await import("@/lib/ai/groq");
-    const groqStream = await groqChatStream(systemPrompt, userMessage, { temperature, maxTokens });
+    const groqStream = await groqChatStream(
+      [{ role: "system", content: sistemaPlano(e) }, ...e.mensajes],
+      { temperature, maxTokens },
+    );
     const decoder = new TextDecoder();
-
-    const stream = new ReadableStream({
+    const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         try {
           const reader = groqStream.getReader();
@@ -217,8 +270,7 @@ async function buildStream(
               const data = line.slice(6);
               if (data === "[DONE]") continue;
               try {
-                const parsed = JSON.parse(data);
-                const text = parsed.choices?.[0]?.delta?.content ?? "";
+                const text = JSON.parse(data).choices?.[0]?.delta?.content ?? "";
                 if (text) {
                   fullResponse += text;
                   controller.enqueue(encoder.encode(text));
@@ -226,9 +278,8 @@ async function buildStream(
               } catch { /* skip malformed */ }
             }
           }
-        } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : "Error";
-          controller.enqueue(encoder.encode(`\n\n[Error: ${msg}]`));
+        } catch (err) {
+          emitirError(controller, err);
         }
         controller.close();
       },
@@ -238,27 +289,29 @@ async function buildStream(
 
   if (provider === "gemini") {
     const { getGeminiClient, GEMINI_FLASH_MODEL } = await import("@/lib/ai/gemini");
-    const gemini = getGeminiClient();
-
-    const geminiStream = await gemini.models.generateContentStream({
+    const geminiStream = await getGeminiClient().models.generateContentStream({
       model: GEMINI_FLASH_MODEL,
-      config: { systemInstruction: systemPrompt, temperature, maxOutputTokens: maxTokens },
-      contents: [{ role: "user", parts: [{ text: userMessage }] }],
+      config: { systemInstruction: sistemaPlano(e), temperature, maxOutputTokens: maxTokens },
+      contents: e.mensajes.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
     });
-
-    const stream = new ReadableStream({
+    // Igual que con Anthropic: se espera el primer fragmento para que un modelo
+    // retirado o una cuota agotada salten acá y la cadena pase al siguiente.
+    const iterator = geminiStream[Symbol.asyncIterator]();
+    const primero = await iterator.next();
+    const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         try {
-          for await (const chunk of geminiStream) {
-            const text = chunk.text ?? "";
+          let paso = primero;
+          while (!paso.done) {
+            const text = paso.value.text ?? "";
             if (text) {
               fullResponse += text;
               controller.enqueue(encoder.encode(text));
             }
+            paso = await iterator.next();
           }
-        } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : "Error";
-          controller.enqueue(encoder.encode(`\n\n[Error: ${msg}]`));
+        } catch (err) {
+          emitirError(controller, err);
         }
         controller.close();
       },
@@ -268,23 +321,21 @@ async function buildStream(
 
   // Anthropic
   const { getAnthropicClient } = await import("@/lib/ai/anthropic");
-  const anthropic = getAnthropicClient();
-  // Escritos: modelo grande (mismo que la generación no-streaming). Chat: Haiku.
-  const anthropicStream = anthropic.messages.stream({
-    model: kind === "escrito" ? "claude-sonnet-4-6" : "claude-haiku-4-5-20251001",
+  const anthropicStream = getAnthropicClient().messages.stream({
+    model: modeloAnthropic(kind),
     max_tokens: maxTokens,
     temperature,
-    system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: userMessage }],
+    system: sistemaAnthropic(e),
+    messages: e.mensajes,
   });
 
   // Esperamos el PRIMER evento antes de devolver el stream: así un 401/429/529
-  // de Anthropic se lanza acá y streamWithFallback pasa al siguiente proveedor,
-  // en vez de terminar como "[Error: ...]" dentro de la respuesta del usuario.
+  // de Anthropic se lanza acá y la cadena pasa al siguiente proveedor, en vez
+  // de terminar como "[Error: ...]" dentro de la respuesta del usuario.
   const iterator = anthropicStream[Symbol.asyncIterator]();
   const primero = await iterator.next();
 
-  const stream = new ReadableStream({
+  const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
         let paso = primero;
@@ -297,9 +348,8 @@ async function buildStream(
           }
           paso = await iterator.next();
         }
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Error";
-        controller.enqueue(encoder.encode(`\n\n[Error: ${msg}]`));
+      } catch (err) {
+        emitirError(controller, err);
       }
       controller.close();
     },
@@ -307,24 +357,18 @@ async function buildStream(
   return { stream, collectResponse: () => fullResponse };
 }
 
-/** Maps provider to display name for DB storage */
+/** Nombre del modelo para guardar en la base (escritos). */
 export function providerModelName(provider: Provider): string {
   const names: Record<Provider, string> = {
-    groq: "groq-llama-3.3-70b",
-    gemini: "gemini-flash",
-    anthropic: "sonnet-4.6",
+    groq: `groq:${MODELOS.groq}`,
+    gemini: `google:${MODELOS.gemini}`,
+    anthropic: MODELOS.anthropicEscrito,
     demo: "demo",
   };
   return names[provider];
 }
 
-/** For chat, Anthropic uses Haiku not Sonnet */
+/** Nombre del modelo para guardar en la base (chat). */
 export function providerChatModelName(provider: Provider): string {
-  const names: Record<Provider, string> = {
-    groq: "groq-llama-3.3-70b",
-    gemini: "gemini-flash",
-    anthropic: "haiku-4.5",
-    demo: "demo",
-  };
-  return names[provider];
+  return provider === "anthropic" ? MODELOS.anthropicChat : providerModelName(provider);
 }

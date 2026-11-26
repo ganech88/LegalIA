@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { MODELOS } from "./models";
 
 let client: GoogleGenAI | null = null;
 
@@ -9,4 +10,4 @@ export function getGeminiClient(): GoogleGenAI {
   return client;
 }
 
-export const GEMINI_FLASH_MODEL = "gemini-2.0-flash";
+export const GEMINI_FLASH_MODEL = MODELOS.gemini;

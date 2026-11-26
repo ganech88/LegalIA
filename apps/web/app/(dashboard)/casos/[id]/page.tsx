@@ -55,6 +55,9 @@ export default async function CasoDetallePage({ params }: { params: Promise<{ id
           <Link href={`/agenda?caso=${c.id}`} className="rounded border border-[var(--brand-navy)] px-3 py-1.5 text-[12px] font-semibold text-[var(--brand-navy)] hover:bg-[var(--brand-paper-2)]">
             + Agendar plazo
           </Link>
+          <Link href={`/asistente?caso=${c.id}`} className="rounded border border-[var(--brand-navy)] px-3 py-1.5 text-[12px] font-semibold text-[var(--brand-navy)] hover:bg-[var(--brand-paper-2)]">
+            Consultar al asistente
+          </Link>
           <Link href={`/agenda/cedula`} className="rounded border border-border px-3 py-1.5 text-[12px] font-semibold text-[var(--brand-ink-2)] hover:border-[var(--brand-gold)]">
             Subir cédula
           </Link>

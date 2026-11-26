@@ -116,7 +116,7 @@ export const PLANS: Plan[] = [
     period: "/mes",
     description: "Para estudios de hasta 5 personas",
     features: [
-      "Escritos ilimitados",
+      "60 escritos por usuario al mes",
       "Hasta 5 usuarios",
       "Mini CRM de casos compartidos",
       "Exportación masiva",

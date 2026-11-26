@@ -14,7 +14,7 @@ const FEATURES = [
 const PLANS = [
   { name: "Gratis", price: "$0", highlights: ["3 escritos/mes con citas verificadas", "20 consultas IA", "Calculadoras ilimitadas", "Gratis para siempre, sin tarjeta"] },
   { name: "Profesional", price: "$15.000/mes", featured: true, highlights: ["30 escritos/mes con citas verificadas", "Consultas IA ilimitadas", "Estilo de redacción personalizado", "Agenda de vencimientos con alertas"] },
-  { name: "Estudio", price: "$30.000/mes", highlights: ["Escritos ilimitados", "Hasta 5 usuarios", "Mini CRM de casos compartidos", "Soporte dedicado"] },
+  { name: "Estudio", price: "$30.000/mes", highlights: ["60 escritos por usuario al mes", "Hasta 5 usuarios", "Mini CRM de casos compartidos", "Soporte dedicado"] },
 ];
 
 function formatDateAR(date: Date): string {
