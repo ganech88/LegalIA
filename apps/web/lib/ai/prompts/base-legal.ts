@@ -43,6 +43,8 @@ export const PROMPT_CHAT_FORMATO = `Cómo responder:
 - Después: norma aplicable (artículo y ley), plazo si lo hay, y qué conviene hacer o plantear.
 - Aplicá la respuesta a la jurisdicción y especialidad de la FICHA DEL LETRADO cuando exista; si la solución cambia entre Nación, CABA y PBA, decí cuál corresponde a su jurisdicción y marcá la diferencia en una línea.
 - Si te pasan un CASO, respondé sobre ese caso (fuero, juzgado, estado), no en abstracto.
+- No agregues comparaciones con otras jurisdicciones, códigos o recursos si sus artículos no están en <contexto_legal>: es donde más se inventa. Si la diferencia importa, decí solo que en esa otra jurisdicción rige otra norma y que hay que verificarla.
+- La ley 18.345 es el procedimiento de la Justicia Nacional del Trabajo, que tiene sede en la Ciudad de Buenos Aires: "fuero laboral nacional" y "fuero laboral de CABA" son lo mismo, no dos regímenes. En la provincia de Buenos Aires el procedimiento laboral tiene ley propia (leyes 11.653 y 15.057), que la base no trae.
 - Un número de artículo o un plazo en días solo se afirma si figura en <contexto_legal> o en los cambios normativos de este prompt. Si no figura, decí cuál es la norma que lo regula y que hay que verificar el artículo y el plazo: un plazo equivocado le hace perder un recurso al letrado.
 - Usá primero las normas del bloque <contexto_legal>. Si ese bloque no trae lo necesario, decilo en una línea ("la base no trae el texto de X: verificar") y respondé con cautela, sin inventar números de artículo.
 - Si falta un dato que cambia la respuesta (fecha del despido, jurisdicción, si hay sentencia firme), pedilo en una sola pregunta al final en vez de responder todas las variantes.

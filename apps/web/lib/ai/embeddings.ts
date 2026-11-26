@@ -20,8 +20,19 @@ function normalize(v: number[]): number[] {
   return v.map((x) => x / norm);
 }
 
+/**
+ * La búsqueda semántica depende de Google (embeddings). Está APAGADA por
+ * defecto desde el 26/11/2026 —proyecto sin crédito—: el asistente usa la
+ * búsqueda de texto completo de Postgres. Los 3.149 vectores siguen guardados;
+ * para reactivarla, definir RAG_SEMANTICO=1 (con GOOGLE_AI_API_KEY válida).
+ * La ingesta (cron) no depende de este interruptor.
+ */
 export function embeddingsDisponibles(): boolean {
   return Boolean(process.env.GOOGLE_AI_API_KEY);
+}
+
+export function busquedaSemanticaActiva(): boolean {
+  return embeddingsDisponibles() && process.env.RAG_SEMANTICO === "1";
 }
 
 async function callBatch(texts: string[], taskType: TaskType): Promise<number[][]> {

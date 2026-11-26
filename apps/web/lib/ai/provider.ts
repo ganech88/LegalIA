@@ -2,7 +2,7 @@
  * Cadena de proveedores de IA con fallback configurable.
  *
  * ORDEN POR DEFECTO según el tipo de tarea:
- *  - Escritos: anthropic → groq → gemini  (calidad primero)
+ *  - Escritos: anthropic → groq  (calidad primero)
  *  - Chat:     según el plan del usuario (ver ordenChatPorPlan)
  *
  * Se puede sobreescribir con variables de entorno (lista separada por comas):
@@ -42,6 +42,12 @@ export interface Fallo {
 }
 
 const ALL_PROVIDERS: Provider[] = ["groq", "gemini", "anthropic"];
+/**
+ * Gemini quedó fuera de la cadena por defecto (26/11/2026): el proyecto de
+ * Google está sin crédito y cada consulta perdía tiempo en un intento fallido.
+ * El código se conserva: para volver a usarlo alcanza con nombrarlo en
+ * AI_CHAT_ORDER / AI_ESCRITO_ORDER (por ejemplo "anthropic,gemini,groq").
+ */
 
 interface GenerateResult {
   content: string;
@@ -68,14 +74,14 @@ function parseOrder(value: string | undefined): Provider[] | null {
  * Orden del chat según el plan. Las cuotas gratuitas de Groq y Google son por
  * proyecto (una sola bolsa para toda la plataforma), no por usuario: no
  * escalan. Por eso el usuario pago va primero al modelo pago —lo financia su
- * suscripción— y el plan gratis usa primero las cuotas gratuitas.
+ * suscripción— y el plan gratis usa primero la cuota gratuita de Groq.
  */
 export function ordenChatPorPlan(plan: string | null | undefined): Provider[] {
-  return plan && plan !== "free" ? ["anthropic", "gemini", "groq"] : ["gemini", "groq", "anthropic"];
+  return plan && plan !== "free" ? ["anthropic", "groq"] : ["groq", "anthropic"];
 }
 
 function availableProviders(kind: Kind, preferido?: Provider[]): Provider[] {
-  const escritoDefault: Provider[] = ["anthropic", "groq", "gemini"];
+  const escritoDefault: Provider[] = ["anthropic", "groq"];
   const specific = kind === "escrito"
     ? parseOrder(process.env.AI_ESCRITO_ORDER)
     : parseOrder(process.env.AI_CHAT_ORDER);
@@ -125,7 +131,7 @@ const modeloAnthropic = (kind: Kind) => (kind === "escrito" ? MODELOS.anthropicE
 async function generar(provider: Provider, e: Entrada, temperature: number, maxTokens: number, kind: Kind): Promise<string> {
   if (provider === "groq") {
     const { groqChat } = await import("@/lib/ai/groq");
-    return groqChat([{ role: "system", content: sistemaPlano(e) }, ...e.mensajes], { temperature, maxTokens });
+    return (await groqChat([{ role: "system", content: sistemaPlano(e) }, ...e.mensajes], { temperature, maxTokens })).content;
   }
   if (provider === "gemini") {
     const { getGeminiClient, GEMINI_FLASH_MODEL } = await import("@/lib/ai/gemini");
@@ -179,6 +185,8 @@ export interface StreamResult {
   stream: ReadableStream<Uint8Array>;
   provider: Provider;
   collectResponse: () => string;
+  /** Modelo exacto que respondió, cuando el proveedor tiene más de uno. */
+  modelo?: string;
   /** Proveedores que fallaron antes del que respondió. */
   fallos: Fallo[];
 }
@@ -239,7 +247,7 @@ async function buildStream(
   temperature: number,
   maxTokens: number,
   kind: Kind,
-): Promise<{ stream: ReadableStream<Uint8Array>; collectResponse: () => string }> {
+): Promise<{ stream: ReadableStream<Uint8Array>; collectResponse: () => string; modelo?: string }> {
   let fullResponse = "";
   const encoder = new TextEncoder();
   const emitirError = (controller: ReadableStreamDefaultController<Uint8Array>, err: unknown) => {
@@ -249,7 +257,7 @@ async function buildStream(
 
   if (provider === "groq") {
     const { groqChatStream } = await import("@/lib/ai/groq");
-    const groqStream = await groqChatStream(
+    const { body: groqStream, model: modeloGroq } = await groqChatStream(
       [{ role: "system", content: sistemaPlano(e) }, ...e.mensajes],
       { temperature, maxTokens },
     );
@@ -284,7 +292,7 @@ async function buildStream(
         controller.close();
       },
     });
-    return { stream, collectResponse: () => fullResponse };
+    return { stream, collectResponse: () => fullResponse, modelo: `groq:${modeloGroq}` };
   }
 
   if (provider === "gemini") {

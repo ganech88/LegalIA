@@ -156,8 +156,8 @@ export async function POST(request: Request) {
     };
     const tokensEntrada = estimarTokens(SISTEMA_ESTATICO + ficha) + entrada.mensajes.reduce((a, m) => a + estimarTokens(m.content), 0);
 
-    const { stream, provider, collectResponse, fallos } = await streamEntradaWithFallback(entrada, {
-      temperature: 0.4,
+    const { stream, provider, collectResponse, fallos, modelo } = await streamEntradaWithFallback(entrada, {
+      temperature: 0.2,
       maxTokens: 1500,
       orden: ordenChatPorPlan(plan),
     });
@@ -190,7 +190,7 @@ export async function POST(request: Request) {
               pregunta: message,
               respuesta,
               fuentes_citadas: fuentesRag.length > 0 ? fuentesRag : null,
-              modelo_usado: providerChatModelName(provider),
+              modelo_usado: modelo ?? providerChatModelName(provider),
               tokens_input: tokensEntrada,
               tokens_output: estimarTokens(respuesta),
               caso_id: casoId,

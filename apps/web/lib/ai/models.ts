@@ -8,6 +8,8 @@
  */
 export const MODELOS = {
   groq: process.env.GROQ_MODEL ?? "openai/gpt-oss-120b",
+  /** Segundo modelo de Groq (misma clave): se prueba si el primero falla o agota su cuota. */
+  groqRespaldo: process.env.GROQ_MODEL_RESPALDO ?? "openai/gpt-oss-20b",
   gemini: process.env.GEMINI_MODEL ?? "gemini-3.8-flash",
   anthropicChat: process.env.ANTHROPIC_CHAT_MODEL ?? "claude-haiku-4-5-20251001",
   anthropicEscrito: process.env.ANTHROPIC_ESCRITO_MODEL ?? "claude-sonnet-4-6",

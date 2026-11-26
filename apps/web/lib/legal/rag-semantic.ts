@@ -8,7 +8,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { embedQuery, embeddingsDisponibles } from "@/lib/ai/embeddings";
+import { embedQuery, busquedaSemanticaActiva } from "@/lib/ai/embeddings";
 
 export interface FuenteRag {
   source_name: string;
@@ -99,8 +99,9 @@ export async function buildTextContext(
 }
 
 /**
- * Contexto legal para una consulta: semántica primero y, si no hay embeddings
- * o fallan (clave, cuota, crédito agotado), texto completo. Devuelve null solo
+ * Contexto legal para una consulta: texto completo de Postgres y, solo si la
+ * búsqueda semántica está activada (RAG_SEMANTICO=1), semántica primero con
+ * texto completo como respaldo. Devuelve null solo
  * si ninguna de las dos encuentra nada.
  */
 export async function buildSemanticContext(
@@ -110,7 +111,7 @@ export async function buildSemanticContext(
 ): Promise<SemanticContext | null> {
   const { matchCount = 6, threshold = 0.45, maxChars = 5000 } = opts;
   let aviso: string | undefined;
-  if (embeddingsDisponibles()) {
+  if (busquedaSemanticaActiva()) {
     try {
       const r = await semantica(admin, query, matchCount, threshold, maxChars);
       if (r) return r;
@@ -118,8 +119,6 @@ export async function buildSemanticContext(
       aviso = (err instanceof Error ? err.message : String(err)).slice(0, 300);
       console.warn(`[rag] búsqueda semántica caída, se usa texto completo: ${aviso}`);
     }
-  } else {
-    aviso = "GOOGLE_AI_API_KEY no configurada";
   }
   const texto = await buildTextContext(admin, query, { matchCount, maxChars });
   return texto ? { ...texto, aviso } : null;

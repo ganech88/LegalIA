@@ -20,9 +20,13 @@ describe("normalizarMensajes", () => {
 });
 
 describe("ordenChatPorPlan", () => {
-  it("plan gratis: primero las cuotas gratuitas", () => {
-    expect(ordenChatPorPlan("free")[0]).toBe("gemini");
+  it("plan gratis: primero la cuota gratuita", () => {
+    expect(ordenChatPorPlan("free")).toEqual(["groq", "anthropic"]);
     expect(ordenChatPorPlan(null).at(-1)).toBe("anthropic");
+  });
+  it("Gemini no está en la cadena por defecto", () => {
+    expect(ordenChatPorPlan("free")).not.toContain("gemini");
+    expect(ordenChatPorPlan("estudio")).not.toContain("gemini");
   });
   it("plan pago: primero el modelo pago", () => {
     expect(ordenChatPorPlan("profesional")[0]).toBe("anthropic");
