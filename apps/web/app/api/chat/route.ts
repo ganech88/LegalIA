@@ -96,16 +96,19 @@ export async function POST(request: Request) {
 
   try {
     // Base legal: búsqueda semántica (con la consulta anterior si es una
-    // repregunta) y, si no hay embeddings, el corpus por palabras clave.
+    // repregunta); si los embeddings no responden, texto completo sobre la
+    // misma base; y recién si no hay base, el corpus por palabras clave.
     const consultaRag = construirConsultaRag(message, historial);
     let ragContext: string;
     let fuentesRag: FuenteRag[] = [];
     const semantic = admin
       ? await buildSemanticContext(admin, consultaRag, { matchCount: 5, threshold: 0.5, maxChars: 4000 })
       : null;
+    let avisoRag: string | undefined;
     if (semantic) {
       ragContext = semantic.contexto;
       fuentesRag = semantic.fuentes;
+      avisoRag = semantic.aviso;
     } else {
       ragContext = buildRagContext(consultaRag, 3000);
     }
@@ -191,7 +194,9 @@ export async function POST(request: Request) {
               tokens_input: tokensEntrada,
               tokens_output: estimarTokens(respuesta),
               caso_id: casoId,
-              proveedores_fallidos: fallos.length > 0 ? fallos : null,
+              proveedores_fallidos: fallos.length > 0 || avisoRag
+                ? [...fallos, ...(avisoRag ? [{ provider: "embeddings", error: avisoRag }] : [])]
+                : null,
             });
             if (admin) {
               await actualizarFichaSiCorresponde(admin, user.id, (perfil as PerfilLetrado | null)?.perfil_ia ?? null);

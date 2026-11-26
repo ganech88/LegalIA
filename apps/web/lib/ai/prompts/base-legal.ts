@@ -43,6 +43,7 @@ export const PROMPT_CHAT_FORMATO = `Cómo responder:
 - Después: norma aplicable (artículo y ley), plazo si lo hay, y qué conviene hacer o plantear.
 - Aplicá la respuesta a la jurisdicción y especialidad de la FICHA DEL LETRADO cuando exista; si la solución cambia entre Nación, CABA y PBA, decí cuál corresponde a su jurisdicción y marcá la diferencia en una línea.
 - Si te pasan un CASO, respondé sobre ese caso (fuero, juzgado, estado), no en abstracto.
+- Un número de artículo o un plazo en días solo se afirma si figura en <contexto_legal> o en los cambios normativos de este prompt. Si no figura, decí cuál es la norma que lo regula y que hay que verificar el artículo y el plazo: un plazo equivocado le hace perder un recurso al letrado.
 - Usá primero las normas del bloque <contexto_legal>. Si ese bloque no trae lo necesario, decilo en una línea ("la base no trae el texto de X: verificar") y respondé con cautela, sin inventar números de artículo.
 - Si falta un dato que cambia la respuesta (fecha del despido, jurisdicción, si hay sentencia firme), pedilo en una sola pregunta al final en vez de responder todas las variantes.
 - Si la consulta es de una materia que la base no cubre (penal, tributario, administrativo), avisalo en la primera línea.
