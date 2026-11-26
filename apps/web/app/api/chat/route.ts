@@ -12,6 +12,7 @@ import { CONTEXTO_REFORMAS_2024_2026 } from "@/lib/legal/regimen";
 import { construirFicha, actualizarFichaSiCorresponde, type PerfilLetrado } from "@/lib/ai/ficha";
 import { construirConsultaRag, recortarHistorial, topeTokensDia } from "@/lib/ai/contexto-chat";
 import { estimarTokens } from "@/lib/ai/models";
+import { datosVerificadosPara } from "@/lib/legal/datos-verificados";
 
 export const maxDuration = 60;
 
@@ -102,7 +103,7 @@ export async function POST(request: Request) {
     let ragContext: string;
     let fuentesRag: FuenteRag[] = [];
     const semantic = admin
-      ? await buildSemanticContext(admin, consultaRag, { matchCount: 5, threshold: 0.5, maxChars: 4000 })
+      ? await buildSemanticContext(admin, consultaRag, { matchCount: 6, threshold: 0.5, maxChars: 4500 })
       : null;
     let avisoRag: string | undefined;
     if (semantic) {
@@ -142,6 +143,10 @@ export async function POST(request: Request) {
         bloqueCaso = `<caso>\n${sanitizePromptValue(lineas.join("\n"))}\n</caso>`;
       }
     }
+
+    // Datos que las calculadoras ya tienen verificados (LRT, UMA) y que la base no trae.
+    const verificados = datosVerificadosPara(consultaRag);
+    if (verificados) ragContext = [verificados, ragContext].filter(Boolean).join("\n\n---\n\n");
 
     const ficha = construirFicha(perfil as PerfilLetrado | null);
     const mensajeFinal = [

@@ -314,12 +314,14 @@ export function chunksFromInfolegLey18345() {
 export async function ingestChunks(
   admin: SupabaseClient,
   chunks: ChunkLegal[],
-  opts: { deleteBy?: "source" | "article" } = {},
+  opts: { deleteBy?: "source" | "article"; sinEmbeddings?: boolean } = {},
 ): Promise<number> {
   if (chunks.length === 0) return 0;
   const deleteBy = opts.deleteBy ?? "source";
 
-  const embeddings = await embedDocuments(chunks.map((c) => c.content));
+  // Sin embeddings la fila igual sirve: la búsqueda de texto completo usa la
+  // columna fts, que Postgres genera sola. El vector se puede completar después.
+  const embeddings = opts.sinEmbeddings ? null : await embedDocuments(chunks.map((c) => c.content));
 
   const sources = Array.from(new Set(chunks.map((c) => c.source_name)));
   for (const source of sources) {
@@ -343,7 +345,7 @@ export async function ingestChunks(
   for (let i = 0; i < chunks.length; i += 100) {
     const rows = chunks.slice(i, i + 100).map((c, j) => ({
       ...c,
-      embedding: JSON.stringify(embeddings[i + j]),
+      embedding: embeddings ? JSON.stringify(embeddings[i + j]) : null,
       metadata: { ingestado_en: new Date().toISOString() },
     }));
     const { error } = await admin.from("legal_knowledge").insert(rows);
