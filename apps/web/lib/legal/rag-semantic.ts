@@ -69,14 +69,44 @@ async function semantica(
   threshold: number,
   maxChars: number,
 ): Promise<SemanticContext | null> {
-  const embedding = await embedQuery(query);
-  const { data, error } = await admin.rpc("search_legal_knowledge", {
+  const [embedding, directos] = await Promise.all([embedQuery(query), articulosNombrados(admin, query)]);
+  const { data, error } = await admin.rpc("search_legal_knowledge_m3", {
     query_embedding: JSON.stringify(embedding),
     match_threshold: threshold,
     match_count: matchCount,
   });
   if (error) throw new Error(error.message);
-  return armar((data ?? []) as FilaRag[], maxChars, "semantica");
+  const filas = sinRepetir([...directos, ...((data ?? []) as FilaRag[])]);
+  return armar(filas.slice(0, matchCount + directos.length), maxChars, "semantica");
+}
+
+/** Artículos que la consulta nombra ("art. 244 del CPCCN"): se traen tal cual, sin depender del ranking. */
+async function articulosNombrados(admin: SupabaseClient, query: string): Promise<FilaRag[]> {
+  const grupos = await Promise.all(
+    articulosCitados(query).map(async (a) => {
+      const { data } = await admin
+        .from("legal_knowledge")
+        .select("source_type, source_name, article_number, title, content")
+        .eq("article_number", a.numero)
+        .ilike("source_name", a.fuente)
+        .limit(2);
+      return ((data ?? []) as Omit<FilaRag, "similarity">[]).map((f) => ({ ...f, similarity: 1 }));
+    }),
+  );
+  return grupos.flat();
+}
+
+function sinRepetir(filas: (FilaRag | undefined)[]): FilaRag[] {
+  const vistos = new Set<string>();
+  const out: FilaRag[] = [];
+  for (const f of filas) {
+    if (!f) continue;
+    const clave = `${f.source_name}|${f.article_number}|${f.title}`;
+    if (vistos.has(clave)) continue;
+    vistos.add(clave);
+    out.push(f);
+  }
+  return out;
 }
 
 /**
@@ -96,36 +126,14 @@ export async function buildTextContext(
   };
   try {
     const [directos, original, reformulada] = await Promise.all([
-      // Artículos que la consulta nombra: se traen tal cual, sin depender del ranking.
-      Promise.all(
-        articulosCitados(query).map(async (a) => {
-          const { data } = await admin
-            .from("legal_knowledge")
-            .select("source_type, source_name, article_number, title, content")
-            .eq("article_number", a.numero)
-            .ilike("source_name", a.fuente)
-            .limit(2);
-          return ((data ?? []) as Omit<FilaRag, "similarity">[]).map((f) => ({ ...f, similarity: 1 }));
-        }),
-      ).then((x) => x.flat()),
+      articulosNombrados(admin, query),
       buscar(query),
       // La misma pregunta en palabras de la ley: rescata el artículo que una pregunta larga tapa.
       reformularConsulta(query).then((q) => (q ? buscar(q) : [])),
     ]);
-    const filas: FilaRag[] = [];
-    const vistos = new Set<string>();
-    const sumar = (f?: FilaRag) => {
-      if (!f) return;
-      const clave = `${f.source_name}|${f.article_number}|${f.title}`;
-      if (vistos.has(clave)) return;
-      vistos.add(clave);
-      filas.push(f);
-    };
-    directos.forEach(sumar);
-    for (let i = 0; i < matchCount; i++) {
-      sumar(reformulada[i]);
-      sumar(original[i]);
-    }
+    const intercalado: (FilaRag | undefined)[] = [];
+    for (let i = 0; i < matchCount; i++) intercalado.push(reformulada[i], original[i]);
+    const filas = sinRepetir([...directos, ...intercalado]);
     return armar(filas.slice(0, matchCount + directos.length), maxChars, "texto");
   } catch {
     return null;
@@ -143,7 +151,7 @@ export async function buildSemanticContext(
   query: string,
   opts: { matchCount?: number; threshold?: number; maxChars?: number } = {},
 ): Promise<SemanticContext | null> {
-  const { matchCount = 6, threshold = 0.45, maxChars = 5000 } = opts;
+  const { matchCount = 6, threshold = 0.35, maxChars = 5000 } = opts;
   let aviso: string | undefined;
   if (busquedaSemanticaActiva()) {
     try {

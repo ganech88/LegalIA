@@ -345,7 +345,7 @@ export async function ingestChunks(
   for (let i = 0; i < chunks.length; i += 100) {
     const rows = chunks.slice(i, i + 100).map((c, j) => ({
       ...c,
-      embedding: embeddings ? JSON.stringify(embeddings[i + j]) : null,
+      embedding_m3: embeddings ? JSON.stringify(embeddings[i + j]) : null,
       metadata: { ingestado_en: new Date().toISOString() },
     }));
     const { error } = await admin.from("legal_knowledge").insert(rows);
